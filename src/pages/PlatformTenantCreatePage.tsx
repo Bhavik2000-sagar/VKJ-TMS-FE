@@ -15,7 +15,6 @@ export function PlatformTenantCreatePage() {
   const qc = useQueryClient();
   const [name, setName] = useState("");
   const [adminEmail, setAdminEmail] = useState("");
-  const [lastInviteLink, setLastInviteLink] = useState<string | null>(null);
 
   function slugify(value: string) {
     const s = value
@@ -38,8 +37,6 @@ export function PlatformTenantCreatePage() {
       await qc.invalidateQueries({ queryKey: ["tenants"], exact: false });
       setName("");
       setAdminEmail("");
-      const link = res.data.inviteLink ?? null;
-      setLastInviteLink(link);
       toast.success("Tenant created");
     },
     onError: (e) => {
@@ -97,25 +94,6 @@ export function PlatformTenantCreatePage() {
           </Button>
         </div>
       </form>
-
-      {lastInviteLink ? (
-        <div className="mt-6 space-y-2 rounded-md border border-border bg-muted/20 p-3">
-          <div className="text-sm font-medium">Invite link (copy)</div>
-          <div className="break-all rounded-md border border-border bg-background px-2 py-1 text-xs text-muted-foreground">
-            {lastInviteLink}
-          </div>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={async () => {
-              await navigator.clipboard.writeText(lastInviteLink);
-              toast.success("Invite link copied");
-            }}
-          >
-            Copy invite link
-          </Button>
-        </div>
-      ) : null}
     </CenteredFormPage>
   );
 }
