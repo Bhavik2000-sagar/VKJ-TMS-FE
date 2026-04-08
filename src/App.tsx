@@ -22,6 +22,7 @@ import { SettingsPage } from "@/pages/SettingsPage";
 import { ProfilePage } from "@/pages/ProfilePage";
 import { DepartmentsPage } from "@/pages/DepartmentsPage";
 import { DepartmentCreatePage } from "@/pages/DepartmentCreatePage";
+import { EodPage } from "@/pages/EodPage";
 import { PlatformTenantsPage } from "@/pages/PlatformTenantsPage";
 import { PlatformDashboardPage } from "@/pages/PlatformDashboardPage";
 import { PlatformTenantCreatePage } from "@/pages/PlatformTenantCreatePage";
@@ -61,6 +62,7 @@ function AppShell() {
             <Route path="/team/:id/edit" element={<TeamUserEditPage />} />
             <Route path="/departments" element={<DepartmentsPage />} />
             <Route path="/departments/new" element={<DepartmentCreatePage />} />
+            <Route path="/eod" element={<EodPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route
               path="/platform/dashboard"

@@ -33,6 +33,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { tenantStatusBadgeClass } from "@/lib/badges";
 
 type TenantRow = {
   id: string;
@@ -227,16 +228,6 @@ export function PlatformTenantsPage() {
     }
   }
 
-  function statusPill(s: TenantRow["status"]) {
-    const base =
-      "inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium";
-    if (s === "ACTIVE")
-      return `${base} border-emerald-200 bg-emerald-50 text-emerald-700`;
-    if (s === "INVITED")
-      return `${base} border-amber-200 bg-amber-50 text-amber-700`;
-    return `${base} border-rose-200 bg-rose-50 text-rose-700`;
-  }
-
   const columns = useMemo<ColumnDef<TenantRow>[]>(
     () => [
       {
@@ -252,7 +243,7 @@ export function PlatformTenantsPage() {
         id: "status",
         header: "Status",
         cell: ({ row }) => (
-          <span className={statusPill(row.original.status)}>
+          <span className={tenantStatusBadgeClass(row.original.status)}>
             {row.original.status === "INVITED"
               ? "Invited"
               : row.original.status === "ACTIVE"

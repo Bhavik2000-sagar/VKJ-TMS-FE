@@ -3,12 +3,20 @@ import { Link, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import type { ColumnDef, SortingState } from "@tanstack/react-table";
 import { getCoreRowModel, useReactTable } from "@tanstack/react-table";
+import { Eye } from "lucide-react";
 import { api } from "@/api/client";
 import { useMe } from "@/hooks/useAuth";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { DataTable } from "@/components/data-table";
 import { cn } from "@/lib/utils";
 
@@ -19,6 +27,7 @@ type DepartmentRow = {
   branchId: string | null;
   createdAt: string;
   branch: { id: string; name: string } | null;
+  usersCount: number;
 };
 
 type PaginatedResponse<T> = {
@@ -27,22 +36,19 @@ type PaginatedResponse<T> = {
 };
 
 const DEFAULT_PAGE_SIZE = 10;
+const PAGE_SIZES = [10, 20, 50] as const;
 
 function parseDepartmentsUrlParams(p: URLSearchParams) {
   const page = Math.max(1, Number(p.get("page") ?? "1") || 1);
-  const pageSize = Math.max(
-    1,
-    Math.min(
-      100,
-      Number(p.get("pageSize") ?? String(DEFAULT_PAGE_SIZE)) ||
-        DEFAULT_PAGE_SIZE,
-    ),
+  const pageSizeRaw = Number.parseInt(
+    p.get("pageSize") ?? String(DEFAULT_PAGE_SIZE),
+    10,
   );
+  const pageSize = (PAGE_SIZES as readonly number[]).includes(pageSizeRaw)
+    ? pageSizeRaw
+    : DEFAULT_PAGE_SIZE;
   const search = String(p.get("search") ?? "");
-  const sortBy = (p.get("sortBy") ?? "createdAt") as
-    | "createdAt"
-    | "name"
-    | "code";
+  const sortBy = p.get("sortBy") as "createdAt" | "name" | "code" | null;
   const sortDir = (p.get("sortDir") ?? "desc") as "asc" | "desc";
   return { page, pageSize, search, sortBy, sortDir };
 }
@@ -109,8 +115,7 @@ export function DepartmentsPage() {
             page,
             pageSize,
             ...(search.trim() ? { search: search.trim() } : {}),
-            sortBy,
-            sortDir,
+            ...(sortBy ? { sortBy, sortDir } : {}),
           },
         },
       );
@@ -140,6 +145,17 @@ export function DepartmentsPage() {
         ),
       },
       {
+        accessorKey: "usersCount",
+        id: "usersCount",
+        header: "Users",
+        enableSorting: false,
+        cell: ({ row }) => (
+          <span className="text-muted-foreground tabular-nums">
+            {row.original.usersCount}
+          </span>
+        ),
+      },
+      {
         accessorKey: "code",
         id: "code",
         header: "Code",
@@ -159,6 +175,24 @@ export function DepartmentsPage() {
               new Date(row.original.createdAt),
             )}
           </span>
+        ),
+      },
+      {
+        id: "actions",
+        header: "Action",
+        enableSorting: false,
+        cell: ({ row }) => (
+          <Link
+            to={`/team?departmentId=${encodeURIComponent(row.original.id)}`}
+            className={cn(
+              buttonVariants({ variant: "outline", size: "sm" }),
+              "h-8 w-8 p-0",
+            )}
+            aria-label={`View team members in ${row.original.name}`}
+            title="View team members"
+          >
+            <Eye className="size-4" />
+          </Link>
         ),
       },
     ],
@@ -201,7 +235,7 @@ export function DepartmentsPage() {
     return (
       <div className="space-y-4">
         <div>
-          <h1 className="font-heading text-2xl font-semibold tracking-tight">
+          <h1 className="font-heading text-2xl font-semibold uppercase tracking-wide text-primary">
             Departments
           </h1>
           <p className="text-sm text-muted-foreground">
@@ -216,7 +250,7 @@ export function DepartmentsPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="font-heading text-2xl font-semibold tracking-tight">
+          <h1 className="font-heading text-2xl font-semibold uppercase tracking-wide text-primary">
             Departments
           </h1>
           <p className="text-sm text-muted-foreground">
@@ -257,10 +291,49 @@ export function DepartmentsPage() {
           </div>
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="text-sm text-muted-foreground">
-              {total === 0
-                ? "0 departments"
-                : `Showing ${(page - 1) * pageSize + 1}–${Math.min(page * pageSize, total)} of ${total}`}
+            <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+              <span>
+                {total === 0
+                  ? "0 departments"
+                  : `Showing ${(page - 1) * pageSize + 1}–${Math.min(page * pageSize, total)} of ${total}`}
+              </span>
+              <span className="hidden sm:inline">·</span>
+              <div className="flex items-center gap-2">
+                <Label
+                  htmlFor="department-page-size"
+                  className="text-muted-foreground"
+                >
+                  Rows per page
+                </Label>
+                <Select
+                  value={String(pageSize)}
+                  onValueChange={(v) => {
+                    const n = Number(v) as (typeof PAGE_SIZES)[number];
+                    setSearchParams(
+                      (prev) => {
+                        const p = new URLSearchParams(prev);
+                        if (n === DEFAULT_PAGE_SIZE) p.delete("pageSize");
+                        else p.set("pageSize", String(n));
+                        p.delete("page");
+                        return p;
+                      },
+                      { replace: true },
+                    );
+                  }}
+                  itemToStringLabel={(vv) => vv}
+                >
+                  <SelectTrigger id="department-page-size" className="h-8 w-18">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PAGE_SIZES.map((n) => (
+                      <SelectItem key={n} value={String(n)}>
+                        {n}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <Button

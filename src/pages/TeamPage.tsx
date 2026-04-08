@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { DataTable } from "@/components/data-table";
 import { cn } from "@/lib/utils";
+import { userStatusBadgeClass } from "@/lib/badges";
 
 type TeamMemberRow = {
   id: string;
@@ -66,21 +67,24 @@ function parseTeamUrlParams(p: URLSearchParams) {
   );
   const search = String(p.get("search") ?? "");
   const departmentId = String(p.get("departmentId") ?? "");
+  const roleId = String(p.get("roleId") ?? "");
+  const status = (p.get("status") ?? "") as "" | "active" | "inactive";
   const sortBy = (p.get("sortBy") ?? "createdAt") as
     | "createdAt"
     | "name"
     | "email"
     | "employeeCode";
   const sortDir = (p.get("sortDir") ?? "desc") as "asc" | "desc";
-  return { page, pageSize, search, departmentId, sortBy, sortDir };
-}
-
-function statusPill(active: boolean) {
-  const base =
-    "inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium";
-  return active
-    ? `${base} border-emerald-200 bg-emerald-50 text-emerald-700`
-    : `${base} border-rose-200 bg-rose-50 text-rose-700`;
+  return {
+    page,
+    pageSize,
+    search,
+    departmentId,
+    roleId,
+    status,
+    sortBy,
+    sortDir,
+  };
 }
 
 export function TeamPage() {
@@ -90,8 +94,16 @@ export function TeamPage() {
   const canManageUsers = perms.has("user.manage");
 
   const [searchParams, setSearchParams] = useSearchParams();
-  const { page, pageSize, search, departmentId, sortBy, sortDir } =
-    parseTeamUrlParams(searchParams);
+  const {
+    page,
+    pageSize,
+    search,
+    departmentId,
+    roleId,
+    status,
+    sortBy,
+    sortDir,
+  } = parseTeamUrlParams(searchParams);
   const [searchInput, setSearchInput] = useState(search);
 
   const tableSorting: SortingState = useMemo(() => {
@@ -102,7 +114,7 @@ export function TeamPage() {
   const membersQuery = useQuery({
     queryKey: [
       "team-members",
-      { page, pageSize, search, departmentId, sortBy, sortDir },
+      { page, pageSize, search, departmentId, roleId, status, sortBy, sortDir },
     ],
     queryFn: async () => {
       const { data } = await api.get<PaginatedResponse<TeamMemberRow>>(
@@ -113,6 +125,8 @@ export function TeamPage() {
             pageSize,
             ...(search.trim() ? { search: search.trim() } : {}),
             ...(departmentId ? { departmentId } : {}),
+            ...(roleId ? { roleId } : {}),
+            ...(status ? { status } : {}),
             sortBy,
             sortDir,
           },
@@ -133,6 +147,18 @@ export function TeamPage() {
     },
   });
   const departmentOptions = departmentsQuery.data ?? [];
+
+  const rolesQuery = useQuery({
+    queryKey: ["tenant-roles", "assignment-options"],
+    enabled: canManageUsers,
+    queryFn: async () => {
+      const { data } = await api.get<{
+        roles: { id: string; code: string; name: string }[];
+      }>("/api/tenant/roles", { params: { for: "assignment" } });
+      return data.roles;
+    },
+  });
+  const roleOptions = rolesQuery.data ?? [];
 
   function deptBadge(seed: string) {
     const n = Array.from(seed).reduce((acc, c) => acc + c.charCodeAt(0), 0);
@@ -282,7 +308,7 @@ export function TeamPage() {
         id: "isActive",
         header: "Status",
         cell: ({ row }) => (
-          <span className={statusPill(row.original.isActive)}>
+          <span className={userStatusBadgeClass(row.original.isActive)}>
             {row.original.isActive ? "Active" : "Inactive"}
           </span>
         ),
@@ -452,17 +478,16 @@ export function TeamPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="w-full sm:w-40 flex flex-col gap-2">
-              <Label>Rows</Label>
+            <div className="w-full sm:w-56 flex flex-col gap-2">
+              <Label>Role</Label>
               <Select
-                value={String(pageSize)}
+                value={roleId || "__all__"}
                 onValueChange={(v) => {
-                  const n = Number(v);
                   setSearchParams(
                     (prev) => {
                       const p = new URLSearchParams(prev);
-                      if (n === DEFAULT_PAGE_SIZE) p.delete("pageSize");
-                      else p.set("pageSize", String(n));
+                      if (v === "__all__") p.delete("roleId");
+                      else p.set("roleId", v);
                       p.delete("page");
                       return p;
                     },
@@ -471,14 +496,68 @@ export function TeamPage() {
                 }}
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue />
+                  {(() => {
+                    if (!roleId) {
+                      return (
+                        <span className="text-muted-foreground">All roles</span>
+                      );
+                    }
+                    const selected = roleOptions.find((r) => r.id === roleId);
+                    if (!selected) {
+                      return (
+                        <span className="text-muted-foreground">All roles</span>
+                      );
+                    }
+                    return <span className="truncate">{selected.name}</span>;
+                  })()}
                 </SelectTrigger>
                 <SelectContent>
-                  {PAGE_SIZES.map((n) => (
-                    <SelectItem key={n} value={String(n)}>
-                      {n}
+                  <SelectItem value="__all__">All roles</SelectItem>
+                  {roleOptions.map((r) => (
+                    <SelectItem key={r.id} value={r.id}>
+                      {r.name}
                     </SelectItem>
                   ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="w-full sm:w-48 flex flex-col gap-2">
+              <Label>Status</Label>
+              <Select
+                value={status || "__all__"}
+                onValueChange={(v) => {
+                  setSearchParams(
+                    (prev) => {
+                      const p = new URLSearchParams(prev);
+                      if (v === "__all__") p.delete("status");
+                      else p.set("status", v);
+                      p.delete("page");
+                      return p;
+                    },
+                    { replace: true },
+                  );
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  {(() => {
+                    if (!status) {
+                      return (
+                        <span className="text-muted-foreground">
+                          All statuses
+                        </span>
+                      );
+                    }
+                    return (
+                      <span className="truncate">
+                        {status === "active" ? "Active" : "Inactive"}
+                      </span>
+                    );
+                  })()}
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">All statuses</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -496,10 +575,49 @@ export function TeamPage() {
           </div>
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="text-sm text-muted-foreground">
-              {total === 0
-                ? "0 members"
-                : `Showing ${(page - 1) * pageSize + 1}–${Math.min(page * pageSize, total)} of ${total}`}
+            <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+              <span>
+                {total === 0
+                  ? "0 members"
+                  : `Showing ${(page - 1) * pageSize + 1}–${Math.min(page * pageSize, total)} of ${total}`}
+              </span>
+              <span className="hidden sm:inline">·</span>
+              <div className="flex items-center gap-2">
+                <Label
+                  htmlFor="team-page-size"
+                  className="text-muted-foreground"
+                >
+                  Rows per page
+                </Label>
+                <Select
+                  value={String(pageSize)}
+                  onValueChange={(v) => {
+                    const n = Number(v) as (typeof PAGE_SIZES)[number];
+                    setSearchParams(
+                      (prev) => {
+                        const p = new URLSearchParams(prev);
+                        if (n === DEFAULT_PAGE_SIZE) p.delete("pageSize");
+                        else p.set("pageSize", String(n));
+                        p.delete("page");
+                        return p;
+                      },
+                      { replace: true },
+                    );
+                  }}
+                  itemToStringLabel={(vv) => vv}
+                >
+                  <SelectTrigger id="team-page-size" className="h-8 w-18">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PAGE_SIZES.map((n) => (
+                      <SelectItem key={n} value={String(n)}>
+                        {n}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <Button

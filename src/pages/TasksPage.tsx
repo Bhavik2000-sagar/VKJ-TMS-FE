@@ -35,6 +35,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
+import { overdueBadgeClass } from "@/lib/badges";
 
 type TaskRow = {
   id: string;
@@ -60,6 +61,7 @@ const SORT_IDS = [
   "title",
   "priority",
   "status",
+  "overdue",
   "dueDate",
   "reviewer",
   "updatedAt",
@@ -381,6 +383,33 @@ export function TasksPage() {
             {row.original.status.label}
           </span>
         ),
+      },
+      {
+        id: "overdue",
+        header: "Overdue",
+        enableSorting: false,
+        accessorFn: (r) => {
+          if (!r.dueDate) return 0;
+          const due = new Date(r.dueDate).getTime();
+          if (Number.isNaN(due)) return 0;
+          const isDone = String(r.status.code).toUpperCase() === "DONE";
+          return !isDone && due < Date.now() ? 1 : 0;
+        },
+        cell: ({ row }) => {
+          const dueDate = row.original.dueDate;
+          if (!dueDate) return <span className="text-muted-foreground">—</span>;
+          const due = new Date(dueDate).getTime();
+          if (Number.isNaN(due))
+            return <span className="text-muted-foreground">—</span>;
+          const isDone =
+            String(row.original.status.code).toUpperCase() === "DONE";
+          const isOverdue = !isDone && due < Date.now();
+          return isOverdue ? (
+            <span className={overdueBadgeClass()}>Overdue</span>
+          ) : (
+            <span className="text-muted-foreground">—</span>
+          );
+        },
       },
       {
         accessorKey: "dueDate",

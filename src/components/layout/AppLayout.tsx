@@ -12,6 +12,7 @@ import {
   Building2,
   Calendar,
   Layers,
+  ClipboardList,
 } from "lucide-react";
 
 export function AppLayout() {
@@ -58,6 +59,11 @@ export function AppLayout() {
                 to="/tasks"
                 icon={<CheckSquare className="h-4 w-4" />}
                 label="Tasks"
+              />
+              <Nav
+                to="/eod"
+                icon={<ClipboardList className="h-4 w-4" />}
+                label="EOD"
               />
               <Nav
                 to="/meetings"
