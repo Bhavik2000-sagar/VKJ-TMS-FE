@@ -14,6 +14,7 @@ import { TaskEditPage } from "@/pages/TaskEditPage";
 import { MeetingsPage } from "@/pages/MeetingsPage";
 import { MeetingDetailPage } from "@/pages/MeetingDetailPage";
 import { MeetingCreatePage } from "@/pages/MeetingCreatePage";
+import { MeetingEditPage } from "@/pages/MeetingEditPage";
 import { ReportsPage } from "@/pages/ReportsPage";
 import { TeamPage } from "@/pages/TeamPage";
 import { TeamUserCreatePage } from "@/pages/TeamUserCreatePage";
@@ -55,6 +56,7 @@ function AppShell() {
             <Route path="/tasks/:id" element={<TaskDetailPage />} />
             <Route path="/meetings" element={<MeetingsPage />} />
             <Route path="/meetings/new" element={<MeetingCreatePage />} />
+            <Route path="/meetings/:id/edit" element={<MeetingEditPage />} />
             <Route path="/meetings/:id" element={<MeetingDetailPage />} />
             <Route path="/reports" element={<ReportsPage />} />
             <Route path="/team" element={<TeamPage />} />

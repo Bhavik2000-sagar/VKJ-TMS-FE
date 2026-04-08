@@ -7,6 +7,7 @@ import { api } from "@/api/client";
 import type { Me } from "@/hooks/useAuth";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,6 +36,7 @@ function initials(name: string) {
 
 export function UserMenu({ me }: { me: Me }) {
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const [logoutOpen, setLogoutOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
 
@@ -42,6 +44,7 @@ export function UserMenu({ me }: { me: Me }) {
     setLoggingOut(true);
     try {
       await api.post("/api/auth/logout");
+      qc.clear();
       toast.success("Signed out");
       navigate("/login");
     } catch {

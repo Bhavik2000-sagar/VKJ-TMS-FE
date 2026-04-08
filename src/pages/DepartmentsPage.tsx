@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/select";
 import { DataTable } from "@/components/data-table";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 type DepartmentRow = {
   id: string;
@@ -182,17 +183,23 @@ export function DepartmentsPage() {
         header: "Action",
         enableSorting: false,
         cell: ({ row }) => (
-          <Link
-            to={`/team?departmentId=${encodeURIComponent(row.original.id)}`}
-            className={cn(
-              buttonVariants({ variant: "outline", size: "sm" }),
-              "h-8 w-8 p-0",
-            )}
-            aria-label={`View team members in ${row.original.name}`}
-            title="View team members"
-          >
-            <Eye className="size-4" />
-          </Link>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Link
+                  to={`/team?departmentId=${encodeURIComponent(row.original.id)}`}
+                  className={cn(
+                    buttonVariants({ variant: "outline", size: "sm" }),
+                    "h-8 w-8 p-0",
+                  )}
+                  aria-label={`View team members in ${row.original.name}`}
+                >
+                  <Eye className="size-4" />
+                </Link>
+              }
+            />
+            <TooltipContent>View</TooltipContent>
+          </Tooltip>
         ),
       },
     ],

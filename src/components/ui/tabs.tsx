@@ -62,7 +62,7 @@ function TabsTrigger({ className, ...props }: TabsPrimitive.Tab.Props) {
         "hover:bg-[color-mix(in_oklab,var(--brand),white_72%)] hover:ring-[color-mix(in_oklab,var(--brand),transparent_82%)] data-active:bg-[color-mix(in_oklab,var(--brand),transparent_90%)] data-active:text-foreground data-active:ring-[color-mix(in_oklab,var(--brand),transparent_70%)] dark:hover:bg-[color-mix(in_oklab,var(--brand),transparent_88%)] dark:data-active:bg-[color-mix(in_oklab,var(--brand),transparent_86%)] dark:data-active:text-foreground",
         "group-data-[variant=pills]/tabs-list:h-8 group-data-[variant=pills]/tabs-list:flex-none group-data-[variant=pills]/tabs-list:rounded-full group-data-[variant=pills]/tabs-list:px-3 group-data-[variant=pills]/tabs-list:py-0 group-data-[variant=pills]/tabs-list:text-sm group-data-[variant=pills]/tabs-list:text-muted-foreground group-data-[variant=pills]/tabs-list:hover:text-foreground group-data-[variant=pills]/tabs-list:data-active:text-foreground",
         "after:absolute after:bg-foreground after:opacity-0 after:transition-opacity group-data-horizontal/tabs:after:inset-x-0 group-data-horizontal/tabs:after:-bottom-1.25 group-data-horizontal/tabs:after:h-0.5 group-data-vertical/tabs:after:inset-y-0 group-data-vertical/tabs:after:-right-1 group-data-vertical/tabs:after:w-0.5 group-data-[variant=line]/tabs-list:data-active:after:opacity-100",
-        "group-data-[variant=pills]/tabs-list:after:hidden",
+        "group-data-[variant=pills]/tabs-list:after:hidden cursor-pointer",
         className,
       )}
       {...props}

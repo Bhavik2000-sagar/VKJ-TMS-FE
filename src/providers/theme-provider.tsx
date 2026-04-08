@@ -26,7 +26,7 @@ function readPreference(): ThemePreference {
   } catch {
     /* ignore */
   }
-  return "dark";
+  return "light";
 }
 
 function resolvePreference(p: ThemePreference): "light" | "dark" {
@@ -44,12 +44,12 @@ function applyToDocument(resolved: "light" | "dark") {
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [preference, setPreferenceState] = useState<ThemePreference>(() =>
-    typeof window !== "undefined" ? readPreference() : "dark",
+    typeof window !== "undefined" ? readPreference() : "light",
   );
   const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">(() =>
     typeof window !== "undefined"
       ? resolvePreference(readPreference())
-      : "dark",
+      : "light",
   );
 
   const setPreference = useCallback((t: ThemePreference) => {

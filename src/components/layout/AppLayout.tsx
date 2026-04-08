@@ -3,6 +3,8 @@ import { motion } from "motion/react";
 import { useMe } from "@/hooks/useAuth";
 import { NotificationBell } from "@/components/NotificationBell";
 import { UserMenu } from "@/components/UserMenu";
+import { useTheme } from "@/providers/theme-provider";
+import { useEffect } from "react";
 import {
   LayoutDashboard,
   CheckSquare,
@@ -18,7 +20,15 @@ import {
 export function AppLayout() {
   const { data, isError } = useMe();
   const navigate = useNavigate();
+  const { setPreference } = useTheme();
   const p = data?.permissions ?? [];
+
+  useEffect(() => {
+    const pref = data?.user?.themePreference;
+    if (pref === "light" || pref === "dark") {
+      setPreference(pref);
+    }
+  }, [data?.user?.themePreference, setPreference]);
 
   if (isError) {
     navigate("/login");

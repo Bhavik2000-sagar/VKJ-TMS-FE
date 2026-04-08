@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { api, uploadTaskAttachment } from "@/api/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,6 +36,9 @@ type UserOption = { id: string; name: string; email: string };
 export function TaskCreatePage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const [sp] = useSearchParams();
+  const meetingId = sp.get("meetingId");
+  const returnTo = sp.get("returnTo");
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -117,8 +120,13 @@ export function TaskCreatePage() {
         exact: false,
         type: "active",
       });
+      const next =
+        returnTo?.trim() ||
+        (meetingId?.trim()
+          ? `/meetings/${encodeURIComponent(meetingId)}`
+          : "/tasks");
       if (files.length === 0) {
-        navigate("/tasks");
+        navigate(next);
         return;
       }
       try {
@@ -127,14 +135,14 @@ export function TaskCreatePage() {
         }
         qc.invalidateQueries({ queryKey: ["task", task.id] });
         await qc.invalidateQueries({ queryKey: ["tasks"], exact: false });
-        navigate("/tasks");
+        navigate(next);
       } catch (e) {
         setFormError(
           e instanceof Error
             ? e.message
             : "Task created but some attachments failed to upload.",
         );
-        navigate("/tasks");
+        navigate(next);
       }
     },
   });
@@ -172,6 +180,7 @@ export function TaskCreatePage() {
       startDate: startDate || null,
       dueDate: dueDate || null,
       estimatedMinutes: estimated,
+      meetingId: meetingId?.trim() ? meetingId : null,
     });
   }
 
@@ -193,7 +202,19 @@ export function TaskCreatePage() {
     <CenteredFormPage
       title="Create task"
       description="Fill in basic info, assignment, timeline, and settings in one place."
-      back={<FormBackButton onClick={() => navigate(-1)} />}
+      back={
+        <FormBackButton
+          onClick={() => {
+            const next =
+              returnTo?.trim() ||
+              (meetingId?.trim()
+                ? `/meetings/${encodeURIComponent(meetingId)}`
+                : null);
+            if (next) navigate(next);
+            else navigate(-1);
+          }}
+        />
+      }
     >
       <form onSubmit={onSubmit} className="space-y-8">
         <div className="space-y-6">
@@ -405,7 +426,19 @@ export function TaskCreatePage() {
         )}
 
         <div className="mt-8 flex flex-wrap gap-3 justify-end border-t border-border pt-6">
-          <Button type="button" variant="outline" onClick={() => navigate(-1)}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              const next =
+                returnTo?.trim() ||
+                (meetingId?.trim()
+                  ? `/meetings/${encodeURIComponent(meetingId)}`
+                  : null);
+              if (next) navigate(next);
+              else navigate(-1);
+            }}
+          >
             Cancel
           </Button>
           <Button

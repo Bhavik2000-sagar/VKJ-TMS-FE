@@ -33,7 +33,7 @@ export function PlatformTenantCreatePage() {
         "/api/platform/tenants",
         { name, slug: slugify(name), adminEmail },
       ),
-    onSuccess: async (res) => {
+    onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["tenants"], exact: false });
       setName("");
       setAdminEmail("");

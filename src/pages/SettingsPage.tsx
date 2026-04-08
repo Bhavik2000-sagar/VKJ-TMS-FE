@@ -1,9 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "motion/react";
 import { isAxiosError } from "axios";
 import { toast } from "sonner";
 import { api } from "@/api/client";
-import { useMe, useHasPermission } from "@/hooks/useAuth";
+import { useMe } from "@/hooks/useAuth";
 import { useTheme, type ThemePreference } from "@/providers/theme-provider";
 import {
   Card,
@@ -15,6 +15,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -23,141 +24,97 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Eye, EyeOff } from "lucide-react";
 
 export function SettingsPage() {
   const qc = useQueryClient();
   const { data: me } = useMe();
-  const canRoles = useHasPermission("role.manage", me);
-  const canOrg = useHasPermission("org.manage", me);
   const { preference, setPreference } = useTheme();
+  const navigate = useNavigate();
 
-  const { data: roles, isError: rolesError } = useQuery({
-    queryKey: ["tenant-roles"],
-    queryFn: async () => {
-      const { data } = await api.get<{ roles: unknown[] }>("/api/tenant/roles");
-      return data.roles;
+  const [notificationEnabled, setNotificationEnabled] = useState<boolean>(
+    me?.user.notificationEnabled ?? true,
+  );
+  const [notificationDraft, setNotificationDraft] = useState<boolean>(
+    me?.user.notificationEnabled ?? true,
+  );
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
+
+  useEffect(() => {
+    setNotificationEnabled(me?.user.notificationEnabled ?? true);
+    setNotificationDraft(me?.user.notificationEnabled ?? true);
+  }, [me?.user.notificationEnabled]);
+
+  const saveNotifications = useMutation({
+    mutationFn: async (enabled: boolean) =>
+      api.patch("/api/auth/me", { notificationEnabled: enabled }),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["me"] });
+      toast.success("Notification preference saved");
     },
-    enabled: Boolean(canRoles),
+    onError: (e) =>
+      toast.error(
+        isAxiosError(e)
+          ? (e.response?.data?.error?.message ?? e.message)
+          : "Failed",
+      ),
   });
 
-  type Branch = { id: string; name: string; code: string | null };
-  type Department = {
-    id: string;
-    name: string;
-    code: string | null;
-    branchId: string | null;
-    branch?: { id: string; name: string } | null;
-  };
-
-  const { data: branches } = useQuery({
-    queryKey: ["org-branches"],
-    queryFn: async () => {
-      const { data } = await api.get<{ branches: Branch[] }>(
-        "/api/org/branches",
-      );
-      return data.branches;
+  const saveThemePreference = useMutation({
+    mutationFn: async (next: "light" | "dark") =>
+      api.patch("/api/auth/me", { themePreference: next }),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["me"] });
+      toast.success("Theme updated");
     },
-    enabled: Boolean(canOrg),
+    onError: (e) =>
+      toast.error(
+        isAxiosError(e)
+          ? (e.response?.data?.error?.message ?? e.message)
+          : "Failed",
+      ),
   });
 
-  const { data: departments } = useQuery({
-    queryKey: ["org-departments"],
-    queryFn: async () => {
-      const { data } = await api.get<{ departments: Department[] }>(
-        "/api/org/departments",
-      );
-      return data.departments;
-    },
-    enabled: Boolean(canOrg),
-  });
-
-  const branchesById = useMemo(() => {
-    const map = new Map<string, Branch>();
-    for (const b of branches ?? []) map.set(b.id, b);
-    return map;
-  }, [branches]);
-
-  const [branchName, setBranchName] = useState("");
-  const [branchCode, setBranchCode] = useState("");
-  const [deptName, setDeptName] = useState("");
-  const [deptCode, setDeptCode] = useState("");
-  const [deptBranchId, setDeptBranchId] = useState<string | null>(null);
-
-  const createBranch = useMutation({
+  const changePassword = useMutation({
     mutationFn: async () =>
-      api.post("/api/org/branches", {
-        name: branchName.trim(),
-        code: branchCode.trim() ? branchCode.trim() : null,
+      api.post("/api/auth/change-password", {
+        currentPassword,
+        newPassword,
       }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["org-branches"] });
-      setBranchName("");
-      setBranchCode("");
-      toast.success("Branch created");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmNewPassword("");
+      toast.success("Password updated. Please sign in again.");
+      api
+        .post("/api/auth/logout")
+        .catch(() => {
+          // If logout fails, we still navigate away to avoid leaving the user in a weird state.
+        })
+        .finally(() => {
+          qc.clear();
+          navigate("/login");
+        });
     },
-    onError: (e) => {
+    onError: (e) =>
       toast.error(
         isAxiosError(e)
           ? (e.response?.data?.error?.message ?? e.message)
           : "Failed",
-      );
-    },
+      ),
   });
 
-  const deleteBranch = useMutation({
-    mutationFn: async (id: string) => api.delete(`/api/org/branches/${id}`),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["org-branches"] });
-      qc.invalidateQueries({ queryKey: ["org-departments"] });
-      toast.success("Branch deleted");
-    },
-    onError: (e) => {
-      toast.error(
-        isAxiosError(e)
-          ? (e.response?.data?.error?.message ?? e.message)
-          : "Failed",
-      );
-    },
-  });
-
-  const createDepartment = useMutation({
-    mutationFn: async () =>
-      api.post("/api/org/departments", {
-        name: deptName.trim(),
-        code: deptCode.trim() ? deptCode.trim() : null,
-        branchId: deptBranchId,
-      }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["org-departments"] });
-      setDeptName("");
-      setDeptCode("");
-      setDeptBranchId(null);
-      toast.success("Department created");
-    },
-    onError: (e) => {
-      toast.error(
-        isAxiosError(e)
-          ? (e.response?.data?.error?.message ?? e.message)
-          : "Failed",
-      );
-    },
-  });
-
-  const deleteDepartment = useMutation({
-    mutationFn: async (id: string) => api.delete(`/api/org/departments/${id}`),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["org-departments"] });
-      toast.success("Department deleted");
-    },
-    onError: (e) => {
-      toast.error(
-        isAxiosError(e)
-          ? (e.response?.data?.error?.message ?? e.message)
-          : "Failed",
-      );
-    },
-  });
+  const passwordsMatch =
+    newPassword.length > 0 &&
+    confirmNewPassword.length > 0 &&
+    newPassword === confirmNewPassword;
 
   return (
     <motion.div
@@ -178,18 +135,16 @@ export function SettingsPage() {
       <Tabs defaultValue="preferences" className="w-full max-w-3xl">
         <TabsList variant="pills">
           <TabsTrigger value="preferences">Preferences</TabsTrigger>
-          {canRoles ? (
-            <TabsTrigger value="roles">Roles & permissions</TabsTrigger>
-          ) : null}
-          {canOrg ? (
-            <TabsTrigger value="org">Branches & departments</TabsTrigger>
-          ) : null}
+          <TabsTrigger value="password">Change password</TabsTrigger>
+          <TabsTrigger value="notifications">Notifications</TabsTrigger>
         </TabsList>
 
         <TabsContent value="preferences" className="mt-4 outline-none">
           <Card>
             <CardHeader>
-              <CardTitle>Appearance</CardTitle>
+              <CardTitle className="font-heading text-base font-semibold uppercase tracking-wide text-primary">
+                Appearance
+              </CardTitle>
               <CardDescription>
                 Choose how TMS looks on this device.
               </CardDescription>
@@ -198,7 +153,13 @@ export function SettingsPage() {
               <Label htmlFor="theme">Theme</Label>
               <Select
                 value={preference}
-                onValueChange={(v) => setPreference(v as ThemePreference)}
+                onValueChange={(v) => {
+                  const next = v as ThemePreference;
+                  setPreference(next);
+                  if (next === "light" || next === "dark") {
+                    saveThemePreference.mutate(next);
+                  }
+                }}
               >
                 <SelectTrigger id="theme" className="w-full max-w-xs">
                   <SelectValue placeholder="Theme" />
@@ -217,210 +178,171 @@ export function SettingsPage() {
           </Card>
         </TabsContent>
 
-        {canRoles ? (
-          <TabsContent value="roles" className="mt-4 outline-none">
-            <Card>
-              <CardHeader>
-                <CardTitle>Roles & permissions</CardTitle>
-                <CardDescription>
-                  Raw role configuration from the API.
-                </CardDescription>
-              </CardHeader>
-              {rolesError ? (
-                <CardContent>
-                  <p className="text-sm text-destructive">
-                    You do not have access to this data.
+        <TabsContent value="password" className="mt-4 outline-none">
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-heading text-base font-semibold uppercase tracking-wide text-primary">
+                Change password
+              </CardTitle>
+              <CardDescription>Update your account password.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="currentPassword">Current password</Label>
+                <div className="relative">
+                  <Input
+                    id="currentPassword"
+                    type={showCurrentPassword ? "text" : "password"}
+                    placeholder="Enter current password"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 absolute inset-y-0 right-0 flex w-10 items-center justify-center text-muted-foreground hover:text-foreground"
+                    onClick={() => setShowCurrentPassword((v) => !v)}
+                    disabled={!currentPassword}
+                    aria-label={
+                      showCurrentPassword ? "Hide password" : "Show password"
+                    }
+                  >
+                    {showCurrentPassword ? (
+                      <EyeOff className="size-4" />
+                    ) : (
+                      <Eye className="size-4" />
+                    )}
+                  </button>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="newPassword">New password</Label>
+                <div className="relative">
+                  <Input
+                    id="newPassword"
+                    type={showNewPassword ? "text" : "password"}
+                    placeholder="Enter new password (min 8 characters)"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 absolute inset-y-0 right-0 flex w-10 items-center justify-center text-muted-foreground hover:text-foreground"
+                    onClick={() => setShowNewPassword((v) => !v)}
+                    disabled={!newPassword}
+                    aria-label={
+                      showNewPassword ? "Hide password" : "Show password"
+                    }
+                  >
+                    {showNewPassword ? (
+                      <EyeOff className="size-4" />
+                    ) : (
+                      <Eye className="size-4" />
+                    )}
+                  </button>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirmNewPassword">Confirm new password</Label>
+                <div className="relative">
+                  <Input
+                    id="confirmNewPassword"
+                    type={showConfirmNewPassword ? "text" : "password"}
+                    placeholder="Re-enter new password"
+                    value={confirmNewPassword}
+                    onChange={(e) => setConfirmNewPassword(e.target.value)}
+                    className="pr-10"
+                    aria-invalid={
+                      confirmNewPassword.length > 0 && !passwordsMatch
+                        ? true
+                        : undefined
+                    }
+                  />
+                  <button
+                    type="button"
+                    className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 absolute inset-y-0 right-0 flex w-10 items-center justify-center text-muted-foreground hover:text-foreground"
+                    onClick={() => setShowConfirmNewPassword((v) => !v)}
+                    disabled={!confirmNewPassword}
+                    aria-label={
+                      showConfirmNewPassword ? "Hide password" : "Show password"
+                    }
+                  >
+                    {showConfirmNewPassword ? (
+                      <EyeOff className="size-4" />
+                    ) : (
+                      <Eye className="size-4" />
+                    )}
+                  </button>
+                </div>
+                {confirmNewPassword.length > 0 && !passwordsMatch ? (
+                  <p className="text-xs text-destructive">
+                    Passwords do not match.
                   </p>
-                </CardContent>
-              ) : (
-                <pre className="max-h-96 overflow-auto rounded-md border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
-                  {JSON.stringify(roles, null, 2)}
-                </pre>
-              )}
-            </Card>
-          </TabsContent>
-        ) : null}
-
-        {canOrg ? (
-          <TabsContent value="org" className="mt-4 space-y-4 outline-none">
-            <Card>
-              <CardHeader>
-                <CardTitle>Branches</CardTitle>
-                <CardDescription>
-                  Create and manage branches for this tenant.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <form
-                  className="grid gap-3 sm:grid-cols-3"
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    createBranch.mutate();
-                  }}
+                ) : null}
+              </div>
+              <div className="flex justify-end">
+                <Button
+                  type="button"
+                  isLoading={changePassword.isPending}
+                  disabled={
+                    !currentPassword ||
+                    newPassword.length < 8 ||
+                    !passwordsMatch ||
+                    changePassword.isPending
+                  }
+                  onClick={() => changePassword.mutate()}
                 >
-                  <div className="sm:col-span-2">
-                    <Label htmlFor="branch-name">Branch name</Label>
-                    <Input
-                      id="branch-name"
-                      value={branchName}
-                      onChange={(e) => setBranchName(e.target.value)}
-                      required
-                      maxLength={120}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="branch-code">Code (optional)</Label>
-                    <Input
-                      id="branch-code"
-                      value={branchCode}
-                      onChange={(e) => setBranchCode(e.target.value)}
-                      maxLength={50}
-                    />
-                  </div>
-                  <div className="sm:col-span-3">
-                    <Button type="submit" disabled={createBranch.isPending}>
-                      Create branch
-                    </Button>
-                  </div>
-                </form>
+                  Save password
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-                <div className="space-y-2">
-                  {(branches ?? []).length === 0 ? (
-                    <p className="text-sm text-muted-foreground">
-                      No branches yet.
-                    </p>
-                  ) : (
-                    (branches ?? []).map((b) => (
-                      <div
-                        key={b.id}
-                        className="flex items-center justify-between rounded-md border border-border px-3 py-2"
-                      >
-                        <div className="min-w-0">
-                          <div className="truncate text-sm font-medium">
-                            {b.name}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {b.code ? `Code: ${b.code}` : "No code"}
-                          </div>
-                        </div>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => deleteBranch.mutate(b.id)}
-                          disabled={deleteBranch.isPending}
-                        >
-                          Delete
-                        </Button>
-                      </div>
-                    ))
-                  )}
+        <TabsContent value="notifications" className="mt-4 outline-none">
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-heading text-base font-semibold uppercase tracking-wide text-primary">
+                Notifications
+              </CardTitle>
+              <CardDescription>
+                Enable or disable in-app notifications.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <label className="flex items-center justify-between gap-3 rounded-lg border border-border bg-background/30 px-3 py-3">
+                <div>
+                  <div className="font-medium text-foreground">
+                    You want notifications
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    When enabled, you’ll receive notifications for tasks and
+                    meeting activity.
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Departments</CardTitle>
-                <CardDescription>
-                  Create and manage departments. Optionally link to a branch.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <form
-                  className="grid gap-3 sm:grid-cols-3"
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    createDepartment.mutate();
-                  }}
+                <Switch
+                  checked={notificationDraft}
+                  onCheckedChange={(v) => setNotificationDraft(Boolean(v))}
+                  disabled={saveNotifications.isPending}
+                />
+              </label>
+              <div className="flex justify-end">
+                <Button
+                  type="button"
+                  isLoading={saveNotifications.isPending}
+                  disabled={
+                    saveNotifications.isPending ||
+                    notificationDraft === notificationEnabled
+                  }
+                  onClick={() => saveNotifications.mutate(notificationDraft)}
                 >
-                  <div className="sm:col-span-2">
-                    <Label htmlFor="dept-name">Department name</Label>
-                    <Input
-                      id="dept-name"
-                      value={deptName}
-                      onChange={(e) => setDeptName(e.target.value)}
-                      required
-                      maxLength={120}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="dept-code">Code (optional)</Label>
-                    <Input
-                      id="dept-code"
-                      value={deptCode}
-                      onChange={(e) => setDeptCode(e.target.value)}
-                      maxLength={50}
-                    />
-                  </div>
-
-                  <div className="sm:col-span-3 max-w-sm">
-                    <Label>Branch (optional)</Label>
-                    <Select
-                      value={deptBranchId ?? "__none__"}
-                      onValueChange={(v) =>
-                        setDeptBranchId(v === "__none__" ? null : v)
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select branch" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="__none__">No branch</SelectItem>
-                        {(branches ?? []).map((b) => (
-                          <SelectItem key={b.id} value={b.id}>
-                            {b.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="sm:col-span-3">
-                    <Button type="submit" disabled={createDepartment.isPending}>
-                      Create department
-                    </Button>
-                  </div>
-                </form>
-
-                <div className="space-y-2">
-                  {(departments ?? []).length === 0 ? (
-                    <p className="text-sm text-muted-foreground">
-                      No departments yet.
-                    </p>
-                  ) : (
-                    (departments ?? []).map((d) => (
-                      <div
-                        key={d.id}
-                        className="flex items-center justify-between rounded-md border border-border px-3 py-2"
-                      >
-                        <div className="min-w-0">
-                          <div className="truncate text-sm font-medium">
-                            {d.name}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {d.code ? `Code: ${d.code}` : "No code"}
-                            {" · "}
-                            {d.branchId
-                              ? `Branch: ${branchesById.get(d.branchId)?.name ?? "—"}`
-                              : "No branch"}
-                          </div>
-                        </div>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => deleteDepartment.mutate(d.id)}
-                          disabled={deleteDepartment.isPending}
-                        >
-                          Delete
-                        </Button>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        ) : null}
+                  Apply changes
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
     </motion.div>
   );

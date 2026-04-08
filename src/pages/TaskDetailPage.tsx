@@ -1,7 +1,12 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { isAxiosError } from "axios";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import {
+  Link,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from "react-router-dom";
 import { motion } from "motion/react";
 import {
   ArrowLeft,
@@ -140,6 +145,8 @@ export function TaskDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const [sp] = useSearchParams();
+  const returnTo = sp.get("returnTo")?.trim() || "/tasks";
   const { data: me } = useMe();
   const canUpdate = useHasPermission("task.update", me);
   const canReviewPerm = useHasPermission("task.review", me);
@@ -313,14 +320,14 @@ export function TaskDetailPage() {
     return (
       <div className="space-y-4">
         <Link
-          to="/tasks"
+          to={returnTo}
           className={cn(
             buttonVariants({ variant: "ghost", size: "sm" }),
             "inline-flex gap-2",
           )}
         >
           <ArrowLeft className="size-4" />
-          Back to tasks
+          Back
         </Link>
         <Card>
           <CardHeader>
@@ -373,7 +380,7 @@ export function TaskDetailPage() {
           variant="ghost"
           size="sm"
           className={cn("inline-flex gap-2 text-muted-foreground", "-ml-2")}
-          onClick={() => navigate(-1)}
+          onClick={() => navigate(returnTo)}
         >
           <ArrowLeft className="size-4" />
           Back

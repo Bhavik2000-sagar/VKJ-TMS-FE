@@ -34,6 +34,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { tenantStatusBadgeClass } from "@/lib/badges";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Mail, ToggleLeft, ToggleRight, Trash2 } from "lucide-react";
 
 type TenantRow = {
   id: string;
@@ -234,70 +236,120 @@ export function PlatformDashboardPage() {
           const t = row.original;
           if (t.status === "INVITED") {
             return (
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={setStatus.isPending || deleteTenant.isPending}
-                  onClick={() =>
-                    setConfirm({
-                      tenantId: t.id,
-                      tenantName: t.name,
-                      kind: "reinvite",
-                    })
-                  }
-                >
-                  Re-invite
-                </Button>
-                <Button
-                  type="button"
-                  variant="destructive"
-                  disabled={setStatus.isPending || deleteTenant.isPending}
-                  onClick={() =>
-                    setConfirm({
-                      tenantId: t.id,
-                      tenantName: t.name,
-                      kind: "delete",
-                    })
-                  }
-                >
-                  Delete
-                </Button>
+              <div className="flex flex-wrap gap-0.5">
+                <Tooltip>
+                  <TooltipTrigger
+                    render={
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="size-8"
+                        aria-label="Re-invite tenant admin"
+                        disabled={setStatus.isPending || deleteTenant.isPending}
+                        onClick={() =>
+                          setConfirm({
+                            tenantId: t.id,
+                            tenantName: t.name,
+                            kind: "reinvite",
+                          })
+                        }
+                      />
+                    }
+                  >
+                    <Mail className="size-4" />
+                  </TooltipTrigger>
+                  <TooltipContent>Re-invite</TooltipContent>
+                </Tooltip>
+
+                <Tooltip>
+                  <TooltipTrigger
+                    render={
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="size-8 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                        aria-label="Delete tenant"
+                        disabled={setStatus.isPending || deleteTenant.isPending}
+                        onClick={() =>
+                          setConfirm({
+                            tenantId: t.id,
+                            tenantName: t.name,
+                            kind: "delete",
+                          })
+                        }
+                      />
+                    }
+                  >
+                    <Trash2 className="size-4" />
+                  </TooltipTrigger>
+                  <TooltipContent>Delete</TooltipContent>
+                </Tooltip>
               </div>
             );
           }
 
           const nextStatus = t.status === "INACTIVE" ? "ACTIVE" : "INACTIVE";
           return (
-            <div className="flex flex-wrap gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                disabled={setStatus.isPending || deleteTenant.isPending}
-                onClick={() =>
-                  setConfirm({
-                    tenantId: t.id,
-                    tenantName: t.name,
-                    kind: nextStatus === "ACTIVE" ? "activate" : "deactivate",
-                  })
-                }
-              >
-                {t.status === "INACTIVE" ? "Activate" : "Deactivate"}
-              </Button>
-              <Button
-                type="button"
-                variant="destructive"
-                disabled={setStatus.isPending || deleteTenant.isPending}
-                onClick={() =>
-                  setConfirm({
-                    tenantId: t.id,
-                    tenantName: t.name,
-                    kind: "delete",
-                  })
-                }
-              >
-                Delete
-              </Button>
+            <div className="flex flex-wrap gap-0.5">
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="size-8"
+                      aria-label={
+                        t.status === "INACTIVE" ? "Activate tenant" : "Deactivate tenant"
+                      }
+                      disabled={setStatus.isPending || deleteTenant.isPending}
+                      onClick={() =>
+                        setConfirm({
+                          tenantId: t.id,
+                          tenantName: t.name,
+                          kind: nextStatus === "ACTIVE" ? "activate" : "deactivate",
+                        })
+                      }
+                    />
+                  }
+                >
+                  {t.status === "INACTIVE" ? (
+                    <ToggleLeft className="size-4" />
+                  ) : (
+                    <ToggleRight className="size-4" />
+                  )}
+                </TooltipTrigger>
+                <TooltipContent>
+                  {t.status === "INACTIVE" ? "Activate" : "Deactivate"}
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="size-8 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      aria-label="Delete tenant"
+                      disabled={setStatus.isPending || deleteTenant.isPending}
+                      onClick={() =>
+                        setConfirm({
+                          tenantId: t.id,
+                          tenantName: t.name,
+                          kind: "delete",
+                        })
+                      }
+                    />
+                  }
+                >
+                  <Trash2 className="size-4" />
+                </TooltipTrigger>
+                <TooltipContent>Delete</TooltipContent>
+              </Tooltip>
             </div>
           );
         },

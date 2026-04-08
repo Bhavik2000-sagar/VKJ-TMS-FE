@@ -7,6 +7,7 @@ import { isAxiosError } from "axios";
 import { toast } from "sonner";
 import { api } from "@/api/client";
 import { useMe } from "@/hooks/useAuth";
+import { Pencil, ToggleLeft, ToggleRight, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +32,11 @@ import {
 import { DataTable } from "@/components/data-table";
 import { cn } from "@/lib/utils";
 import { userStatusBadgeClass } from "@/lib/badges";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 type TeamMemberRow = {
   id: string;
@@ -319,40 +325,82 @@ export function TeamPage() {
               id: "actions",
               header: "Actions",
               cell: ({ row }) => (
-                <div className="flex items-center justify-start gap-2">
-                  <Link to={`/team/${row.original.id}/edit`}>
-                    <Button type="button" variant="outline" size="sm">
-                      Edit
-                    </Button>
-                  </Link>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      setConfirm({
-                        userId: row.original.id,
-                        userName: row.original.name,
-                        next: !row.original.isActive,
-                      })
-                    }
-                  >
-                    {row.original.isActive ? "Deactivate" : "Activate"}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="border-destructive/40 text-destructive hover:bg-destructive/10"
-                    onClick={() =>
-                      setDeleteConfirm({
-                        userId: row.original.id,
-                        userName: row.original.name,
-                      })
-                    }
-                  >
-                    Delete
-                  </Button>
+                <div className="flex items-center gap-0.5">
+                  <Tooltip>
+                    <TooltipTrigger
+                      render={
+                        <Link to={`/team/${row.original.id}/edit`}>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="size-8"
+                            aria-label="Edit user"
+                          >
+                            <Pencil className="size-4" />
+                          </Button>
+                        </Link>
+                      }
+                    ></TooltipTrigger>
+                    <TooltipContent>Edit</TooltipContent>
+                  </Tooltip>
+
+                  <Tooltip>
+                    <TooltipTrigger
+                      render={
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="size-8"
+                          aria-label={
+                            row.original.isActive
+                              ? "Deactivate user"
+                              : "Activate user"
+                          }
+                          onClick={() =>
+                            setConfirm({
+                              userId: row.original.id,
+                              userName: row.original.name,
+                              next: !row.original.isActive,
+                            })
+                          }
+                        >
+                          {row.original.isActive ? (
+                            <ToggleRight className="size-4" />
+                          ) : (
+                            <ToggleLeft className="size-4" />
+                          )}
+                        </Button>
+                      }
+                    ></TooltipTrigger>
+                    <TooltipContent>
+                      {row.original.isActive ? "Deactivate" : "Activate"}
+                    </TooltipContent>
+                  </Tooltip>
+
+                  <Tooltip>
+                    <TooltipTrigger
+                      render={
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="size-8 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                          aria-label="Delete user"
+                          onClick={() =>
+                            setDeleteConfirm({
+                              userId: row.original.id,
+                              userName: row.original.name,
+                            })
+                          }
+                        >
+                          <Trash2 className="size-4" />
+                        </Button>
+                      }
+                    ></TooltipTrigger>
+                    <TooltipContent>Delete</TooltipContent>
+                  </Tooltip>
                 </div>
               ),
             } satisfies ColumnDef<TeamMemberRow>,

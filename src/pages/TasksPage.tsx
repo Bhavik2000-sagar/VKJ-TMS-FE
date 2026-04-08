@@ -34,6 +34,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { overdueBadgeClass } from "@/lib/badges";
 
@@ -44,6 +45,8 @@ type TaskRow = {
   dueDate: string | null;
   updatedAt: string;
   status: { code: string; label: string };
+  createdFrom: string;
+  meetingId: string | null;
   reviewer: { id: string; name: string; email: string } | null;
 };
 
@@ -412,6 +415,27 @@ export function TasksPage() {
         },
       },
       {
+        id: "createdFrom",
+        header: "Created from",
+        enableSorting: false,
+        accessorFn: (r) => r.createdFrom,
+        cell: ({ row }) => {
+          const cf = String(row.original.createdFrom ?? "TASK").toUpperCase();
+          if (cf === "MEETING" && row.original.meetingId) {
+            return (
+              <Link
+                to={`/meetings/${row.original.meetingId}`}
+                className="text-primary hover:underline"
+                onClick={(e) => e.stopPropagation()}
+              >
+                Meeting
+              </Link>
+            );
+          }
+          return <span className="text-muted-foreground">Task</span>;
+        },
+      },
+      {
         accessorKey: "dueDate",
         id: "dueDate",
         header: "Due date",
@@ -452,52 +476,73 @@ export function TasksPage() {
             role="group"
             aria-label="Task actions"
           >
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="size-8"
-              aria-label="View task"
-              onClick={(e) => {
-                e.stopPropagation();
-                navigate(`/tasks/${row.original.id}`);
-              }}
-            >
-              <Eye className="size-4" />
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="size-8"
-              aria-label="Edit task"
-              isLoading={deleteTask.isPending}
-              disabled={deleteTask.isPending}
-              onClick={(e) => {
-                e.stopPropagation();
-                navigate(`/tasks/${row.original.id}/edit`);
-              }}
-            >
-              <Pencil className="size-4" />
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="size-8 text-destructive hover:bg-destructive/10 hover:text-destructive"
-              aria-label="Delete task"
-              onClick={(e) => {
-                e.stopPropagation();
-                setDeleteTarget({
-                  id: row.original.id,
-                  title: row.original.title,
-                });
-              }}
-              isLoading={deleteTask.isPending}
-              disabled={deleteTask.isPending}
-            >
-              <Trash2 className="size-4" />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-8"
+                    aria-label="View task"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/tasks/${row.original.id}`);
+                    }}
+                  />
+                }
+              >
+                <Eye className="size-4" />
+              </TooltipTrigger>
+              <TooltipContent>View</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-8"
+                    aria-label="Edit task"
+                    isLoading={deleteTask.isPending}
+                    disabled={deleteTask.isPending}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/tasks/${row.original.id}/edit`);
+                    }}
+                  />
+                }
+              >
+                <Pencil className="size-4" />
+              </TooltipTrigger>
+              <TooltipContent>Edit</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-8 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                    aria-label="Delete task"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDeleteTarget({
+                        id: row.original.id,
+                        title: row.original.title,
+                      });
+                    }}
+                    isLoading={deleteTask.isPending}
+                    disabled={deleteTask.isPending}
+                  />
+                }
+              >
+                <Trash2 className="size-4" />
+              </TooltipTrigger>
+              <TooltipContent>Delete</TooltipContent>
+            </Tooltip>
           </div>
         ),
       },

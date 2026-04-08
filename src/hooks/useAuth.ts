@@ -8,6 +8,8 @@ export type Me = {
     name: string;
     phone?: string | null;
     birthDate?: string | null;
+    notificationEnabled?: boolean;
+    themePreference?: "light" | "dark";
     tenantId: string | null;
     roleCode?: string;
   };

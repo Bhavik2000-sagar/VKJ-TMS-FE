@@ -1,6 +1,11 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import {
+  Link,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from "react-router-dom";
 import { api } from "@/api/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -61,6 +66,8 @@ export function TaskEditPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const hydrated = useRef(false);
+  const [sp] = useSearchParams();
+  const returnTo = sp.get("returnTo");
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -168,7 +175,7 @@ export function TaskEditPage() {
         type: "active",
       });
       await qc.invalidateQueries({ queryKey: ["task", t.id] });
-      navigate("/tasks");
+      navigate(returnTo?.trim() || "/tasks");
     },
   });
 
@@ -248,7 +255,15 @@ export function TaskEditPage() {
     <CenteredFormPage
       title="Edit task"
       description="Update details, assignment, and timeline."
-      back={<FormBackButton onClick={() => navigate(-1)} />}
+      back={
+        <FormBackButton
+          onClick={() => {
+            const next = returnTo?.trim();
+            if (next) navigate(next);
+            else navigate(-1);
+          }}
+        />
+      }
     >
       <form onSubmit={onSubmit} className="space-y-8">
         <div className="space-y-6">
@@ -442,7 +457,7 @@ export function TaskEditPage() {
         )}
 
         <div className="mt-8 flex flex-wrap gap-3 justify-end border-t border-border pt-6">
-          <Link to={`/tasks/${id}`}>
+          <Link to={returnTo?.trim() || `/tasks/${id}`}>
             <Button type="button" variant="outline">
               Cancel
             </Button>

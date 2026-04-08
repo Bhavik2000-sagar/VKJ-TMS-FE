@@ -1,18 +1,31 @@
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { api } from "@/api/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
   CenteredFormPage,
   FormBackButton,
 } from "@/components/layout/CenteredFormPage";
 
+const MEETING_PRIORITIES = ["LOW", "MEDIUM", "HIGH", "URGENT"] as const;
+
 export function MeetingCreatePage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const [priority, setPriority] =
+    useState<(typeof MEETING_PRIORITIES)[number]>("MEDIUM");
+  const [durationMinutes, setDurationMinutes] = useState<number>(30);
   const { data: users } = useQuery({
     queryKey: ["meeting-attendees"],
     queryFn: async () => {
@@ -27,6 +40,10 @@ export function MeetingCreatePage() {
     mutationFn: (payload: {
       title: string;
       agenda?: string;
+      meetingLink?: string;
+      preparationNotes?: string;
+      priority?: (typeof MEETING_PRIORITIES)[number];
+      durationMinutes?: number;
       datetime: string;
       attendeeIds: string[];
     }) => api.post("/api/meetings", payload),
@@ -53,6 +70,11 @@ export function MeetingCreatePage() {
           create.mutate({
             title: String(fd.get("title")),
             agenda: String(fd.get("agenda") ?? ""),
+            meetingLink: String(fd.get("meetingLink") ?? "") || undefined,
+            preparationNotes:
+              String(fd.get("preparationNotes") ?? "") || undefined,
+            priority,
+            durationMinutes,
             datetime: new Date(String(fd.get("datetime"))).toISOString(),
             attendeeIds,
           });
@@ -79,6 +101,25 @@ export function MeetingCreatePage() {
           </div>
 
           <div className="space-y-2">
+            <Label htmlFor="meetingLink">Meeting link</Label>
+            <Input
+              id="meetingLink"
+              name="meetingLink"
+              placeholder="e.g. https://meet.google.com/xxx-xxxx-xxx"
+              type="url"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="preparationNotes">Preparation notes</Label>
+            <Textarea
+              id="preparationNotes"
+              name="preparationNotes"
+              placeholder="Anything attendees should review or prepare before the meeting…"
+            />
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="datetime">When</Label>
             <Input
               id="datetime"
@@ -86,6 +127,41 @@ export function MeetingCreatePage() {
               type="datetime-local"
               required
             />
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Priority</Label>
+              <Select value={priority} onValueChange={(v) => setPriority(v as any)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {MEETING_PRIORITIES.map((p) => (
+                    <SelectItem key={p} value={p}>
+                      {p.charAt(0) + p.slice(1).toLowerCase()}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="durationMinutes">Duration (minutes)</Label>
+              <Input
+                id="durationMinutes"
+                type="number"
+                min={5}
+                max={1440}
+                step={5}
+                placeholder="e.g. 30"
+                value={durationMinutes}
+                onChange={(e) => {
+                  const n = Number(e.target.value);
+                  setDurationMinutes(Number.isFinite(n) ? n : 30);
+                }}
+              />
+            </div>
           </div>
 
           <div className="space-y-2">
