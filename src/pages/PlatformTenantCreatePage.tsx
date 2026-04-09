@@ -51,10 +51,12 @@ export function PlatformTenantCreatePage() {
 
   return (
     <CenteredFormPage
-      title="Create tenant"
+      title="Create Company"
       description="Provision a new company and generate an invitation link for its admin."
       back={
-        <FormBackLink to="/platform/tenants">Back to tenant list</FormBackLink>
+        <FormBackLink to="/platform/tenants">
+          Back to companies list
+        </FormBackLink>
       }
     >
       <form

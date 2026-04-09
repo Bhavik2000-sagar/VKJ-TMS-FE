@@ -33,9 +33,21 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { tenantStatusBadgeClass } from "@/lib/badges";
-import { Mail, ToggleLeft, ToggleRight, Trash2 } from "lucide-react";
+import {
+  Eye,
+  Mail,
+  Pencil,
+  Plus,
+  ToggleLeft,
+  ToggleRight,
+  Trash2,
+} from "lucide-react";
 
 type TenantRow = {
   id: string;
@@ -68,7 +80,7 @@ function useDebouncedValue<T>(value: T, ms: number): T {
   return v;
 }
 
-const DEFAULT_PAGE_SIZE = 20;
+const DEFAULT_PAGE_SIZE = 10;
 
 function parseTenantsUrlParams(searchParams: URLSearchParams) {
   const page = Math.max(
@@ -100,7 +112,15 @@ function parseTenantsUrlParams(searchParams: URLSearchParams) {
 
   const pagination: PaginationState = { pageIndex: page - 1, pageSize };
 
-  return { page, pagination, tableSorting, apiSortBy, apiSortDir };
+  const statusRaw = searchParams.get("status") || "";
+  const status: "" | "INVITED" | "ACTIVE" | "INACTIVE" =
+    statusRaw === "INVITED" ||
+    statusRaw === "ACTIVE" ||
+    statusRaw === "INACTIVE"
+      ? statusRaw
+      : "";
+
+  return { page, pagination, tableSorting, apiSortBy, apiSortDir, status };
 }
 
 export function PlatformTenantsPage() {
@@ -111,7 +131,8 @@ export function PlatformTenantsPage() {
     () => parseTenantsUrlParams(searchParams),
     [searchParams],
   );
-  const { pagination, tableSorting, apiSortBy, apiSortDir } = listParams;
+  const { pagination, tableSorting, apiSortBy, apiSortDir, status } =
+    listParams;
 
   const [searchInput, setSearchInput] = useState(
     () => searchParams.get("q") ?? "",
@@ -148,6 +169,7 @@ export function PlatformTenantsPage() {
       pagination.pageIndex,
       pagination.pageSize,
       search,
+      status,
       apiSortBy,
       apiSortDir,
     ],
@@ -159,6 +181,7 @@ export function PlatformTenantsPage() {
             page: pagination.pageIndex + 1,
             pageSize: pagination.pageSize,
             ...(search.trim() ? { search: search.trim() } : {}),
+            ...(status ? { status } : {}),
             sortBy: apiSortBy,
             sortDir: apiSortDir,
           },
@@ -286,6 +309,50 @@ export function PlatformTenantsPage() {
                 <Tooltip>
                   <TooltipTrigger
                     render={
+                      <Link to={`/platform/tenants/${t.id}`}>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="size-8"
+                          aria-label="View company details"
+                          disabled={
+                            setStatus.isPending || deleteTenant.isPending
+                          }
+                        >
+                          <Eye className="size-4" />
+                        </Button>
+                      </Link>
+                    }
+                  />
+                  <TooltipContent>View</TooltipContent>
+                </Tooltip>
+
+                <Tooltip>
+                  <TooltipTrigger
+                    render={
+                      <Link to={`/platform/tenants/${t.id}/edit`}>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="size-8"
+                          aria-label="Edit company"
+                          disabled={
+                            setStatus.isPending || deleteTenant.isPending
+                          }
+                        >
+                          <Pencil className="size-4" />
+                        </Button>
+                      </Link>
+                    }
+                  />
+                  <TooltipContent>Edit</TooltipContent>
+                </Tooltip>
+
+                <Tooltip>
+                  <TooltipTrigger
+                    render={
                       <Button
                         type="button"
                         variant="ghost"
@@ -342,33 +409,76 @@ export function PlatformTenantsPage() {
               <Tooltip>
                 <TooltipTrigger
                   render={
+                    <Link to={`/platform/tenants/${t.id}`}>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="size-8"
+                        aria-label="View company details"
+                        disabled={setStatus.isPending || deleteTenant.isPending}
+                      >
+                        <Eye className="size-4" />
+                      </Button>
+                    </Link>
+                  }
+                />
+                <TooltipContent>View</TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Link to={`/platform/tenants/${t.id}/edit`}>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="size-8"
+                        aria-label="Edit company"
+                        disabled={setStatus.isPending || deleteTenant.isPending}
+                      >
+                        <Pencil className="size-4" />
+                      </Button>
+                    </Link>
+                  }
+                />
+                <TooltipContent>Edit</TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger
+                  render={
                     <Button
                       type="button"
                       variant="ghost"
                       size="icon"
                       className="size-8"
                       aria-label={
-                        t.status === "INACTIVE" ? "Activate tenant" : "Deactivate tenant"
+                        t.status === "INACTIVE"
+                          ? "Activate tenant"
+                          : "Deactivate tenant"
                       }
                       disabled={setStatus.isPending || deleteTenant.isPending}
                       onClick={() =>
                         setConfirm({
                           tenantId: t.id,
                           tenantName: t.name,
-                          kind: nextStatus === "ACTIVE" ? "activate" : "deactivate",
+                          kind:
+                            nextStatus === "ACTIVE" ? "activate" : "deactivate",
                         })
                       }
                     />
                   }
                 >
                   {t.status === "INACTIVE" ? (
-                    <ToggleLeft className="size-4" />
+                    <ToggleLeft className="size-4 text-red-500" />
                   ) : (
-                    <ToggleRight className="size-4" />
+                    <ToggleRight className="size-4 text-green-500" />
                   )}
                 </TooltipTrigger>
                 <TooltipContent>
-                  {t.status === "INACTIVE" ? "Activate" : "Deactivate"}
+                  {t.status === "INACTIVE" ? "Activate it" : "Deactivate it"}
                 </TooltipContent>
               </Tooltip>
 
@@ -461,11 +571,20 @@ export function PlatformTenantsPage() {
   return (
     <div className="space-y-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold uppercase tracking-wide text-primary">
-          Companies (tenants)
-        </h1>
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold uppercase tracking-wide text-primary">
+            Companies
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Companies are the entities that own the data and users in the
+            platform.
+          </p>
+        </div>
         <Link to="/platform/tenants/new">
-          <Button>Add tenant</Button>
+          <Button>
+            <Plus className="size-4" />
+            Add Company
+          </Button>
         </Link>
       </div>
 
@@ -562,7 +681,7 @@ export function PlatformTenantsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Tenant list</CardTitle>
+          <CardTitle>Companies list</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -577,7 +696,35 @@ export function PlatformTenantsPage() {
                 }}
               />
             </div>
-            <div className="w-full sm:w-40">
+            <div className="w-full flex flex-col gap-2 sm:max-w-sm">
+              <Label>Status</Label>
+              <Select
+                value={status}
+                onValueChange={(v) => {
+                  setSearchParams(
+                    (prev) => {
+                      const p = new URLSearchParams(prev);
+                      if (!v) p.delete("status");
+                      else p.set("status", v);
+                      p.delete("page");
+                      return p;
+                    },
+                    { replace: true },
+                  );
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="All statuses" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All statuses</SelectItem>
+                  <SelectItem value="INVITED">Invited</SelectItem>
+                  <SelectItem value="ACTIVE">Active</SelectItem>
+                  <SelectItem value="INACTIVE">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="w-full flex flex-col gap-2 sm:max-w-sm">
               <Label>Rows</Label>
               <Select
                 value={String(pagination.pageSize)}

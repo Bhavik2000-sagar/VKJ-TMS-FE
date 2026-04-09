@@ -17,6 +17,7 @@ import {
   CenteredFormPage,
   FormBackButton,
 } from "@/components/layout/CenteredFormPage";
+import { CheckCircle2 } from "lucide-react";
 
 const MEETING_PRIORITIES = ["LOW", "MEDIUM", "HIGH", "URGENT"] as const;
 
@@ -261,15 +262,19 @@ export function MeetingEditPage() {
           </div>
         </div>
 
-        <div className="mt-8 flex flex-wrap justify-end border-t border-border pt-6">
+        <div className="mt-8 flex flex-wrap gap-3 justify-end border-t border-border pt-6">
           <Button
             type="button"
-            variant="outline"
             isLoading={markCompleted.isPending}
             disabled={!canMarkCompleted || markCompleted.isPending}
             onClick={() => markCompleted.mutate()}
+            className={"mr-auto"}
           >
+            <CheckCircle2 className="size-4" />
             Mark as completed
+          </Button>
+          <Button type="button" variant="outline" onClick={() => navigate(-1)}>
+            Cancel
           </Button>
           <Button
             type="submit"

@@ -5,6 +5,7 @@ import { isAxiosError } from "axios";
 import { toast } from "sonner";
 import { api } from "@/api/client";
 import { useMe } from "@/hooks/useAuth";
+import { canCreateUsers } from "@/lib/userCreationRoles";
 import { Button } from "@/components/ui/button";
 import {
   CenteredFormPage,
@@ -27,8 +28,7 @@ export function TeamUserCreatePage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const me = useMe();
-  const perms = new Set(me.data?.permissions ?? []);
-  const canManageUsers = perms.has("user.manage");
+  const canAddUser = canCreateUsers(me.data?.user.roleCode);
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -42,7 +42,7 @@ export function TeamUserCreatePage() {
 
   const rolesQuery = useQuery({
     queryKey: ["tenant-roles", "assignment"],
-    enabled: canManageUsers,
+    enabled: canAddUser,
     queryFn: async () => {
       const { data } = await api.get<{ roles: Role[] }>("/api/tenant/roles", {
         params: { for: "assignment" },
@@ -53,7 +53,7 @@ export function TeamUserCreatePage() {
 
   const managersQuery = useQuery({
     queryKey: ["team-managers-options"],
-    enabled: canManageUsers,
+    enabled: canAddUser,
     queryFn: async () => {
       const { data } = await api.get<{
         items: {
@@ -75,7 +75,7 @@ export function TeamUserCreatePage() {
 
   const departmentsQuery = useQuery({
     queryKey: ["org-departments", "options"],
-    enabled: canManageUsers,
+    enabled: canAddUser,
     queryFn: async () => {
       const { data } = await api.get<{ departments: DepartmentOption[] }>(
         "/api/org/departments",
@@ -144,15 +144,16 @@ export function TeamUserCreatePage() {
     },
   });
 
-  if (!canManageUsers) {
+  if (!canAddUser) {
     return (
       <CenteredFormPage
         title="Add user"
-        description="You don’t have permission to manage users."
+        description="You don’t have access to add users."
         back={<FormBackLink to="/team">Back to team</FormBackLink>}
       >
         <p className="text-sm text-muted-foreground">
-          Contact a company admin if you need access.
+          Only Company Admin / Director, VP / GM, and Managers can add users
+          (with role limits).
         </p>
       </CenteredFormPage>
     );

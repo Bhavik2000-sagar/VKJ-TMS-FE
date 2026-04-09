@@ -9,7 +9,14 @@ import {
 } from "@tanstack/react-table";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { ChevronLeft, ChevronRight, Eye, Pencil, Trash2 } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  Pencil,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/api/client";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -34,7 +41,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { overdueBadgeClass } from "@/lib/badges";
 
@@ -719,6 +730,7 @@ export function TasksPage() {
           </p>
         </div>
         <Link to="/tasks/new" className={cn(buttonVariants())}>
+          <Plus className="size-4" />
           New task
         </Link>
       </div>

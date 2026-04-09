@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { api, uploadTaskAttachment } from "@/api/client";
+import { useMe } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -39,6 +40,9 @@ export function TaskCreatePage() {
   const [sp] = useSearchParams();
   const meetingId = sp.get("meetingId");
   const returnTo = sp.get("returnTo");
+  const { data: me } = useMe();
+  const isStaffOrSupporter =
+    me?.user.roleCode === "STAFF" || me?.user.roleCode === "SUPPORTER";
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -174,9 +178,9 @@ export function TaskCreatePage() {
       statusId,
       priority,
       taskType,
-      assignedToId: toNull(assignedToId),
-      reviewerId: toNull(reviewerId),
-      supporterId: toNull(supporterId),
+      assignedToId: isStaffOrSupporter ? null : toNull(assignedToId),
+      reviewerId: isStaffOrSupporter ? null : toNull(reviewerId),
+      supporterId: isStaffOrSupporter ? null : toNull(supporterId),
       startDate: startDate || null,
       dueDate: dueDate || null,
       estimatedMinutes: estimated,
@@ -265,54 +269,58 @@ export function TaskCreatePage() {
 
           <Separator />
 
-          <section className="space-y-4">
-            <h4 className="text-sm font-semibold uppercase tracking-wide text-primary">
-              Assignment
-            </h4>
-            <div className="grid gap-4 sm:grid-cols-1">
-              <div className="space-y-2">
-                <Label>Responsible person</Label>
-                <Select
-                  value={assignedToId}
-                  onValueChange={setAssignedToId}
-                  itemToStringLabel={userLabelForValue}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Who owns delivery" />
-                  </SelectTrigger>
-                  <SelectContent>{userItems()}</SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Reviewer</Label>
-                <Select
-                  value={reviewerId}
-                  onValueChange={setReviewerId}
-                  itemToStringLabel={userLabelForValue}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Who signs off" />
-                  </SelectTrigger>
-                  <SelectContent>{userItems()}</SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Supporter</Label>
-                <Select
-                  value={supporterId}
-                  onValueChange={setSupporterId}
-                  itemToStringLabel={userLabelForValue}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Optional helper" />
-                  </SelectTrigger>
-                  <SelectContent>{userItems()}</SelectContent>
-                </Select>
-              </div>
-            </div>
-          </section>
+          {isStaffOrSupporter ? null : (
+            <>
+              <section className="space-y-4">
+                <h4 className="text-sm font-semibold uppercase tracking-wide text-primary">
+                  Assignment
+                </h4>
+                <div className="grid gap-4 sm:grid-cols-1">
+                  <div className="space-y-2">
+                    <Label>Responsible person</Label>
+                    <Select
+                      value={assignedToId}
+                      onValueChange={setAssignedToId}
+                      itemToStringLabel={userLabelForValue}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Who owns delivery" />
+                      </SelectTrigger>
+                      <SelectContent>{userItems()}</SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Reviewer</Label>
+                    <Select
+                      value={reviewerId}
+                      onValueChange={setReviewerId}
+                      itemToStringLabel={userLabelForValue}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Who signs off" />
+                      </SelectTrigger>
+                      <SelectContent>{userItems()}</SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Supporter</Label>
+                    <Select
+                      value={supporterId}
+                      onValueChange={setSupporterId}
+                      itemToStringLabel={userLabelForValue}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Optional helper" />
+                      </SelectTrigger>
+                      <SelectContent>{userItems()}</SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </section>
 
-          <Separator />
+              <Separator />
+            </>
+          )}
 
           <section className="space-y-4">
             <h4 className="text-sm font-semibold uppercase tracking-wide text-primary">

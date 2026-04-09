@@ -7,7 +7,8 @@ import { isAxiosError } from "axios";
 import { toast } from "sonner";
 import { api } from "@/api/client";
 import { useMe } from "@/hooks/useAuth";
-import { Pencil, ToggleLeft, ToggleRight, Trash2 } from "lucide-react";
+import { canCreateUsers } from "@/lib/userCreationRoles";
+import { Pencil, Plus, ToggleLeft, ToggleRight, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -97,7 +98,9 @@ export function TeamPage() {
   const qc = useQueryClient();
   const me = useMe();
   const perms = new Set(me.data?.permissions ?? []);
+  const canViewTeam = perms.has("team.view");
   const canManageUsers = perms.has("user.manage");
+  const canAddUser = canCreateUsers(me.data?.user.roleCode);
 
   const [searchParams, setSearchParams] = useSearchParams();
   const {
@@ -122,6 +125,7 @@ export function TeamPage() {
       "team-members",
       { page, pageSize, search, departmentId, roleId, status, sortBy, sortDir },
     ],
+    enabled: canViewTeam,
     queryFn: async () => {
       const { data } = await api.get<PaginatedResponse<TeamMemberRow>>(
         "/api/team/members",
@@ -144,7 +148,7 @@ export function TeamPage() {
 
   const departmentsQuery = useQuery({
     queryKey: ["org-departments", "options"],
-    enabled: canManageUsers,
+    enabled: canViewTeam,
     queryFn: async () => {
       const { data } = await api.get<{
         departments: { id: string; name: string; code: string | null }[];
@@ -156,7 +160,7 @@ export function TeamPage() {
 
   const rolesQuery = useQuery({
     queryKey: ["tenant-roles", "assignment-options"],
-    enabled: canManageUsers,
+    enabled: canViewTeam,
     queryFn: async () => {
       const { data } = await api.get<{
         roles: { id: string; code: string; name: string }[];
@@ -367,9 +371,9 @@ export function TeamPage() {
                           }
                         >
                           {row.original.isActive ? (
-                            <ToggleRight className="size-4" />
+                            <ToggleRight className="size-5 text-green-500" />
                           ) : (
-                            <ToggleLeft className="size-4" />
+                            <ToggleLeft className="size-5 text-red-500" />
                           )}
                         </Button>
                       }
@@ -453,268 +457,290 @@ export function TeamPage() {
             Search and manage users in your organization.
           </p>
         </div>
-        {canManageUsers ? (
+        {canAddUser ? (
           <Link to="/team/new">
-            <Button>Add user</Button>
+            <Button>
+              <Plus className="size-4" />
+              Add user
+            </Button>
           </Link>
         ) : null}
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Members</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <div className="w-full sm:max-w-sm flex flex-col gap-2">
-              <Label htmlFor="team-search">Search</Label>
-              <Input
-                id="team-search"
-                placeholder="Search by name, email, or employee code…"
-                value={searchInput}
-                onChange={(e) => {
-                  setSearchInput(e.target.value);
-                }}
-              />
-            </div>
-            <div className="w-full sm:w-56 flex flex-col gap-2">
-              <Label>Department</Label>
-              <Select
-                value={departmentId || "__all__"}
-                onValueChange={(v) => {
-                  setSearchParams(
-                    (prev) => {
-                      const p = new URLSearchParams(prev);
-                      if (v === "__all__") p.delete("departmentId");
-                      else p.set("departmentId", v);
-                      p.delete("page");
-                      return p;
-                    },
-                    { replace: true },
-                  );
-                }}
-              >
-                <SelectTrigger className="w-full">
-                  {(() => {
-                    if (!departmentId) {
-                      return (
-                        <span className="text-muted-foreground">
-                          All departments
-                        </span>
-                      );
-                    }
-                    const selected = departmentOptions.find(
-                      (d) => d.id === departmentId,
-                    );
-                    if (!selected) {
-                      return (
-                        <span className="text-muted-foreground">
-                          All departments
-                        </span>
-                      );
-                    }
-                    return <span className="truncate">{selected.name}</span>;
-                  })()}
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__all__">All departments</SelectItem>
-                  {departmentOptions.map((d) => (
-                    <SelectItem key={d.id} value={d.id}>
-                      {d.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="w-full sm:w-56 flex flex-col gap-2">
-              <Label>Role</Label>
-              <Select
-                value={roleId || "__all__"}
-                onValueChange={(v) => {
-                  setSearchParams(
-                    (prev) => {
-                      const p = new URLSearchParams(prev);
-                      if (v === "__all__") p.delete("roleId");
-                      else p.set("roleId", v);
-                      p.delete("page");
-                      return p;
-                    },
-                    { replace: true },
-                  );
-                }}
-              >
-                <SelectTrigger className="w-full">
-                  {(() => {
-                    if (!roleId) {
-                      return (
-                        <span className="text-muted-foreground">All roles</span>
-                      );
-                    }
-                    const selected = roleOptions.find((r) => r.id === roleId);
-                    if (!selected) {
-                      return (
-                        <span className="text-muted-foreground">All roles</span>
-                      );
-                    }
-                    return <span className="truncate">{selected.name}</span>;
-                  })()}
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__all__">All roles</SelectItem>
-                  {roleOptions.map((r) => (
-                    <SelectItem key={r.id} value={r.id}>
-                      {r.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="w-full sm:w-48 flex flex-col gap-2">
-              <Label>Status</Label>
-              <Select
-                value={status || "__all__"}
-                onValueChange={(v) => {
-                  setSearchParams(
-                    (prev) => {
-                      const p = new URLSearchParams(prev);
-                      if (v === "__all__") p.delete("status");
-                      else p.set("status", v);
-                      p.delete("page");
-                      return p;
-                    },
-                    { replace: true },
-                  );
-                }}
-              >
-                <SelectTrigger className="w-full">
-                  {(() => {
-                    if (!status) {
-                      return (
-                        <span className="text-muted-foreground">
-                          All statuses
-                        </span>
-                      );
-                    }
-                    return (
-                      <span className="truncate">
-                        {status === "active" ? "Active" : "Inactive"}
-                      </span>
-                    );
-                  })()}
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__all__">All statuses</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+      {!canViewTeam ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Team</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              You don’t have access to the Team module.
+            </p>
+          </CardContent>
+        </Card>
+      ) : null}
 
-          <div className="overflow-auto rounded-md border border-border">
-            <DataTable
-              table={table}
-              columnCount={columns.length}
-              sort={tableSorting}
-              onChangeSort={onChangeSort}
-              isLoading={membersQuery.isLoading}
-              emptyMessage="No team members match your search."
-            />
-          </div>
-
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-              <span>
-                {total === 0
-                  ? "0 members"
-                  : `Showing ${(page - 1) * pageSize + 1}–${Math.min(page * pageSize, total)} of ${total}`}
-              </span>
-              <span className="hidden sm:inline">·</span>
-              <div className="flex items-center gap-2">
-                <Label
-                  htmlFor="team-page-size"
-                  className="text-muted-foreground"
-                >
-                  Rows per page
-                </Label>
+      {canViewTeam ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Members</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+              <div className="w-full sm:max-w-sm flex flex-col gap-2">
+                <Label htmlFor="team-search">Search</Label>
+                <Input
+                  id="team-search"
+                  placeholder="Search by name, email, or employee code…"
+                  value={searchInput}
+                  onChange={(e) => {
+                    setSearchInput(e.target.value);
+                  }}
+                />
+              </div>
+              <div className="w-full sm:w-56 flex flex-col gap-2">
+                <Label>Department</Label>
                 <Select
-                  value={String(pageSize)}
+                  value={departmentId || "__all__"}
                   onValueChange={(v) => {
-                    const n = Number(v) as (typeof PAGE_SIZES)[number];
                     setSearchParams(
                       (prev) => {
                         const p = new URLSearchParams(prev);
-                        if (n === DEFAULT_PAGE_SIZE) p.delete("pageSize");
-                        else p.set("pageSize", String(n));
+                        if (v === "__all__") p.delete("departmentId");
+                        else p.set("departmentId", v);
                         p.delete("page");
                         return p;
                       },
                       { replace: true },
                     );
                   }}
-                  itemToStringLabel={(vv) => vv}
                 >
-                  <SelectTrigger id="team-page-size" className="h-8 w-18">
-                    <SelectValue />
+                  <SelectTrigger className="w-full">
+                    {(() => {
+                      if (!departmentId) {
+                        return (
+                          <span className="text-muted-foreground">
+                            All departments
+                          </span>
+                        );
+                      }
+                      const selected = departmentOptions.find(
+                        (d) => d.id === departmentId,
+                      );
+                      if (!selected) {
+                        return (
+                          <span className="text-muted-foreground">
+                            All departments
+                          </span>
+                        );
+                      }
+                      return <span className="truncate">{selected.name}</span>;
+                    })()}
                   </SelectTrigger>
                   <SelectContent>
-                    {PAGE_SIZES.map((n) => (
-                      <SelectItem key={n} value={String(n)}>
-                        {n}
+                    <SelectItem value="__all__">All departments</SelectItem>
+                    {departmentOptions.map((d) => (
+                      <SelectItem key={d.id} value={d.id}>
+                        {d.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
+              <div className="w-full sm:w-56 flex flex-col gap-2">
+                <Label>Role</Label>
+                <Select
+                  value={roleId || "__all__"}
+                  onValueChange={(v) => {
+                    setSearchParams(
+                      (prev) => {
+                        const p = new URLSearchParams(prev);
+                        if (v === "__all__") p.delete("roleId");
+                        else p.set("roleId", v);
+                        p.delete("page");
+                        return p;
+                      },
+                      { replace: true },
+                    );
+                  }}
+                >
+                  <SelectTrigger className="w-full">
+                    {(() => {
+                      if (!roleId) {
+                        return (
+                          <span className="text-muted-foreground">
+                            All roles
+                          </span>
+                        );
+                      }
+                      const selected = roleOptions.find((r) => r.id === roleId);
+                      if (!selected) {
+                        return (
+                          <span className="text-muted-foreground">
+                            All roles
+                          </span>
+                        );
+                      }
+                      return <span className="truncate">{selected.name}</span>;
+                    })()}
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__all__">All roles</SelectItem>
+                    {roleOptions.map((r) => (
+                      <SelectItem key={r.id} value={r.id}>
+                        {r.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="w-full sm:w-48 flex flex-col gap-2">
+                <Label>Status</Label>
+                <Select
+                  value={status || "__all__"}
+                  onValueChange={(v) => {
+                    setSearchParams(
+                      (prev) => {
+                        const p = new URLSearchParams(prev);
+                        if (v === "__all__") p.delete("status");
+                        else p.set("status", v);
+                        p.delete("page");
+                        return p;
+                      },
+                      { replace: true },
+                    );
+                  }}
+                >
+                  <SelectTrigger className="w-full">
+                    {(() => {
+                      if (!status) {
+                        return (
+                          <span className="text-muted-foreground">
+                            All statuses
+                          </span>
+                        );
+                      }
+                      return (
+                        <span className="truncate">
+                          {status === "active" ? "Active" : "Inactive"}
+                        </span>
+                      );
+                    })()}
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__all__">All statuses</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                disabled={page <= 1 || membersQuery.isLoading}
-                onClick={() =>
-                  setSearchParams(
-                    (prev) => {
-                      const p = new URLSearchParams(prev);
-                      const cur = parseTeamUrlParams(p).page;
-                      const next = Math.max(1, cur - 1);
-                      if (next <= 1) p.delete("page");
-                      else p.set("page", String(next));
-                      return p;
-                    },
-                    { replace: true },
-                  )
-                }
-              >
-                Previous
-              </Button>
-              <span className="text-sm text-muted-foreground">
-                Page {page} / {pageCount}
-              </span>
-              <Button
-                type="button"
-                variant="outline"
-                disabled={page >= pageCount || membersQuery.isLoading}
-                onClick={() =>
-                  setSearchParams(
-                    (prev) => {
-                      const p = new URLSearchParams(prev);
-                      const cur = parseTeamUrlParams(p).page;
-                      const next = Math.min(pageCount, cur + 1);
-                      if (next <= 1) p.delete("page");
-                      else p.set("page", String(next));
-                      return p;
-                    },
-                    { replace: true },
-                  )
-                }
-              >
-                Next
-              </Button>
+
+            <div className="overflow-auto rounded-md border border-border">
+              <DataTable
+                table={table}
+                columnCount={columns.length}
+                sort={tableSorting}
+                onChangeSort={onChangeSort}
+                isLoading={membersQuery.isLoading}
+                emptyMessage="No team members match your search."
+              />
             </div>
-          </div>
-        </CardContent>
-      </Card>
+
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                <span>
+                  {total === 0
+                    ? "0 members"
+                    : `Showing ${(page - 1) * pageSize + 1}–${Math.min(page * pageSize, total)} of ${total}`}
+                </span>
+                <span className="hidden sm:inline">·</span>
+                <div className="flex items-center gap-2">
+                  <Label
+                    htmlFor="team-page-size"
+                    className="text-muted-foreground"
+                  >
+                    Rows per page
+                  </Label>
+                  <Select
+                    value={String(pageSize)}
+                    onValueChange={(v) => {
+                      const n = Number(v) as (typeof PAGE_SIZES)[number];
+                      setSearchParams(
+                        (prev) => {
+                          const p = new URLSearchParams(prev);
+                          if (n === DEFAULT_PAGE_SIZE) p.delete("pageSize");
+                          else p.set("pageSize", String(n));
+                          p.delete("page");
+                          return p;
+                        },
+                        { replace: true },
+                      );
+                    }}
+                    itemToStringLabel={(vv) => vv}
+                  >
+                    <SelectTrigger id="team-page-size" className="h-8 w-18">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PAGE_SIZES.map((n) => (
+                        <SelectItem key={n} value={String(n)}>
+                          {n}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={page <= 1 || membersQuery.isLoading}
+                  onClick={() =>
+                    setSearchParams(
+                      (prev) => {
+                        const p = new URLSearchParams(prev);
+                        const cur = parseTeamUrlParams(p).page;
+                        const next = Math.max(1, cur - 1);
+                        if (next <= 1) p.delete("page");
+                        else p.set("page", String(next));
+                        return p;
+                      },
+                      { replace: true },
+                    )
+                  }
+                >
+                  Previous
+                </Button>
+                <span className="text-sm text-muted-foreground">
+                  Page {page} / {pageCount}
+                </span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={page >= pageCount || membersQuery.isLoading}
+                  onClick={() =>
+                    setSearchParams(
+                      (prev) => {
+                        const p = new URLSearchParams(prev);
+                        const cur = parseTeamUrlParams(p).page;
+                        const next = Math.min(pageCount, cur + 1);
+                        if (next <= 1) p.delete("page");
+                        else p.set("page", String(next));
+                        return p;
+                      },
+                      { replace: true },
+                    )
+                  }
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
 
       <AlertDialog
         open={confirm != null}

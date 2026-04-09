@@ -17,13 +17,17 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
   overdueBadgeClass,
   taskPriorityBadgeClass,
   taskStatusBadgeClass,
 } from "@/lib/badges";
+import {
+  spotlightCardContentLayerClass,
+  topLeftSpotlightCardClass,
+} from "@/lib/cardFx";
 
 type TaskSummary = {
   id: string;
@@ -42,6 +46,9 @@ type EodTodayResponse = {
   overdue: TaskSummary[];
   focusNext: TaskSummary[];
 };
+
+const eodSectionCardClass = topLeftSpotlightCardClass;
+const eodSectionCardLayerClass = spotlightCardContentLayerClass;
 
 function TaskList({
   items,
@@ -167,29 +174,29 @@ export function EodPage() {
             Auto-generated summary from your tasks and today’s activity.
           </p>
         </div>
-        <Link
-          to="/tasks"
-          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
-        >
-          Go to tasks <ArrowRight className="size-4" />
+        <Link to="/tasks" className={cn(buttonVariants())}>
+          Go to tasks
+          <ArrowRight className="size-4" />
         </Link>
       </div>
 
-      <Card className="border-border bg-background/30">
-        <CardHeader>
+      <Card
+        className={cn("border-border bg-background/30", eodSectionCardClass)}
+      >
+        <CardHeader className={eodSectionCardLayerClass}>
           <CardTitle className="font-heading text-base font-semibold uppercase tracking-wide text-primary flex items-center gap-2">
             <ListChecks className="size-4 text-primary" />
             Summary
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className={eodSectionCardLayerClass}>
           <p className="text-sm text-muted-foreground">{summaryText}</p>
         </CardContent>
       </Card>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
+        <Card className={eodSectionCardClass}>
+          <CardHeader className={eodSectionCardLayerClass}>
             <CardTitle className="font-heading text-base font-semibold uppercase tracking-wide text-primary">
               Completed today{" "}
               <span className="text-muted-foreground">
@@ -197,7 +204,7 @@ export function EodPage() {
               </span>
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className={eodSectionCardLayerClass}>
             <TaskList
               items={q.data?.completedToday ?? []}
               emptyText={q.isLoading ? "Loading…" : "No completed tasks today."}
@@ -205,8 +212,8 @@ export function EodPage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
+        <Card className={eodSectionCardClass}>
+          <CardHeader className={eodSectionCardLayerClass}>
             <CardTitle className="font-heading text-base font-semibold uppercase tracking-wide text-primary">
               Worked on today{" "}
               <span className="text-muted-foreground">
@@ -214,7 +221,7 @@ export function EodPage() {
               </span>
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className={eodSectionCardLayerClass}>
             <TaskList
               items={workedOnPreview}
               emptyText={
@@ -255,8 +262,8 @@ export function EodPage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
+        <Card className={eodSectionCardClass}>
+          <CardHeader className={eodSectionCardLayerClass}>
             <CardTitle className="font-heading text-base font-semibold uppercase tracking-wide text-primary">
               In progress{" "}
               <span className="text-muted-foreground">
@@ -264,7 +271,7 @@ export function EodPage() {
               </span>
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className={eodSectionCardLayerClass}>
             <TaskList
               items={q.data?.inProgress ?? []}
               emptyText={q.isLoading ? "Loading…" : "No in-progress tasks."}
@@ -273,8 +280,8 @@ export function EodPage() {
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
+      <Card className={eodSectionCardClass}>
+        <CardHeader className={eodSectionCardLayerClass}>
           <CardTitle className="font-heading text-base font-semibold uppercase tracking-wide text-primary">
             Next focus{" "}
             <span className="text-muted-foreground">
@@ -282,7 +289,7 @@ export function EodPage() {
             </span>
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className={eodSectionCardLayerClass}>
           <TaskList
             items={q.data?.focusNext ?? []}
             emptyText={q.isLoading ? "Loading…" : "Nothing to focus next."}

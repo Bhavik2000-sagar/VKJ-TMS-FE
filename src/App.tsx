@@ -27,6 +27,8 @@ import { EodPage } from "@/pages/EodPage";
 import { PlatformTenantsPage } from "@/pages/PlatformTenantsPage";
 import { PlatformDashboardPage } from "@/pages/PlatformDashboardPage";
 import { PlatformTenantCreatePage } from "@/pages/PlatformTenantCreatePage";
+import { PlatformTenantDetailPage } from "@/pages/PlatformTenantDetailPage";
+import { PlatformTenantEditPage } from "@/pages/PlatformTenantEditPage";
 import { useTheme } from "@/providers/theme-provider";
 
 const qc = new QueryClient();
@@ -73,6 +75,14 @@ function AppShell() {
             <Route
               path="/platform/tenants/new"
               element={<PlatformTenantCreatePage />}
+            />
+            <Route
+              path="/platform/tenants/:id"
+              element={<PlatformTenantDetailPage />}
+            />
+            <Route
+              path="/platform/tenants/:id/edit"
+              element={<PlatformTenantEditPage />}
             />
             <Route path="/platform/tenants" element={<PlatformTenantsPage />} />
           </Route>

@@ -132,7 +132,10 @@ export function MeetingCreatePage() {
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label>Priority</Label>
-              <Select value={priority} onValueChange={(v) => setPriority(v as any)}>
+              <Select
+                value={priority}
+                onValueChange={(v) => setPriority(v as any)}
+              >
                 <SelectTrigger className="w-full">
                   <SelectValue />
                 </SelectTrigger>
@@ -180,7 +183,10 @@ export function MeetingCreatePage() {
           </div>
         </div>
 
-        <div className="mt-8 flex flex-wrap justify-end border-t border-border pt-6">
+        <div className="mt-8 flex flex-wrap gap-3 justify-end border-t border-border pt-6">
+          <Button type="button" variant="outline" onClick={() => navigate(-1)}>
+            Cancel
+          </Button>
           <Button type="submit" disabled={create.isPending}>
             Create meeting
           </Button>

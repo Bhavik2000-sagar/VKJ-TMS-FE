@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useSearchParams } from "react-router-dom";
 import type { ColumnDef, SortingState } from "@tanstack/react-table";
 import { getCoreRowModel, useReactTable } from "@tanstack/react-table";
-import { Ban, Eye, Pencil, Trash2 } from "lucide-react";
+import { Ban, Eye, Pencil, Plus, Trash2 } from "lucide-react";
 import { api } from "@/api/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -481,7 +481,7 @@ export function MeetingsPage() {
           </p>
         </div>
         <Link to="/meetings/new" className={cn(buttonVariants())}>
-          Create Meeting
+          <Plus className="size-4" /> Create Meeting
         </Link>
       </div>
 

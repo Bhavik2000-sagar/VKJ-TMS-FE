@@ -3,7 +3,7 @@ import { Link, useParams, useSearchParams } from "react-router-dom";
 import { api } from "@/api/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Eye, Pencil, Plus } from "lucide-react";
+import { CheckCircle2, ExternalLink, Eye, Pencil, Plus } from "lucide-react";
 import {
   overdueBadgeClass,
   taskPriorityBadgeClass,
@@ -126,13 +126,19 @@ function parseMeetingTasksUrlParams(p: URLSearchParams) {
   const priorityRaw = p.get("priority") ?? "";
   const priority = PRIORITIES.includes(priorityRaw as any) ? priorityRaw : "";
 
-  const sortByRaw = p.get("sortBy") ?? "updatedAt";
-  const sortBy = isSortId(sortByRaw) ? sortByRaw : "updatedAt";
-  const sortDir = (p.get("sortDir") ?? "desc") === "asc" ? "asc" : "desc";
+  const sortByRaw = p.get("sortBy");
+  const sortDirRaw = p.get("sortDir");
+  const sortBy =
+    sortByRaw && sortByRaw !== "" && isSortId(sortByRaw)
+      ? (sortByRaw as SortId)
+      : null;
+  const sortDir =
+    sortBy && (sortDirRaw === "asc" || sortDirRaw === "desc")
+      ? sortDirRaw
+      : null;
 
-  const sorting: SortingState = sortBy
-    ? [{ id: sortBy, desc: sortDir === "desc" }]
-    : [];
+  const sorting: SortingState =
+    sortBy && sortDir ? [{ id: sortBy, desc: sortDir === "desc" }] : [];
   const pagination: PaginationState = { pageIndex: page - 1, pageSize };
 
   return {
@@ -188,6 +194,12 @@ export function MeetingDetailPage() {
     queryKey: ["meeting-tasks", id, searchParams.toString()],
     queryFn: async () => {
       const parsed = parseMeetingTasksUrlParams(searchParams);
+      const apiSortBy =
+        parsed.sortBy && parsed.sortDir
+          ? parsed.sortBy === "overdue"
+            ? "dueDate"
+            : parsed.sortBy
+          : undefined;
       const { data } = await api.get<TasksApiResponse>("/api/tasks", {
         params: {
           meetingId: String(id),
@@ -196,8 +208,9 @@ export function MeetingDetailPage() {
           ...(parsed.statusId ? { statusId: parsed.statusId } : {}),
           ...(parsed.priority ? { priority: parsed.priority } : {}),
           ...(parsed.q ? { search: parsed.q } : {}),
-          sortBy: parsed.sortBy === "overdue" ? "dueDate" : parsed.sortBy,
-          sortDir: parsed.sortDir,
+          ...(apiSortBy && parsed.sortDir
+            ? { sortBy: apiSortBy, sortDir: parsed.sortDir }
+            : {}),
         },
       });
       return data;
@@ -466,15 +479,8 @@ export function MeetingDetailPage() {
     );
   }, [setSearchParams, pageCount]);
 
-  const table = useReactTable({
-    data: rows,
-    columns,
-    pageCount,
-    state: { pagination, sorting: tableSorting },
-    manualPagination: true,
-    manualSorting: true,
-    enableSortingRemoval: true,
-    onSortingChange: (updater) => {
+  const onChangeSort = useCallback(
+    (updater: SortingState | ((prev: SortingState) => SortingState)) => {
       const next =
         typeof updater === "function" ? updater(tableSorting) : updater;
       setSearchParams(
@@ -484,13 +490,14 @@ export function MeetingDetailPage() {
           if (!first) {
             p.delete("sortBy");
             p.delete("sortDir");
-          } else {
-            const id = isSortId(String(first.id))
-              ? (first.id as SortId)
-              : "updatedAt";
+          } else if (isSortId(String(first.id))) {
+            const id = first.id as SortId;
             const dir: "asc" | "desc" = first.desc ? "desc" : "asc";
             p.set("sortBy", id);
             p.set("sortDir", dir);
+          } else {
+            p.delete("sortBy");
+            p.delete("sortDir");
           }
           p.delete("page");
           return p;
@@ -498,6 +505,17 @@ export function MeetingDetailPage() {
         { replace: true },
       );
     },
+    [tableSorting, setSearchParams],
+  );
+
+  const table = useReactTable({
+    data: rows,
+    columns,
+    pageCount,
+    state: { pagination, sorting: tableSorting },
+    manualPagination: true,
+    manualSorting: true,
+    enableSortingRemoval: true,
     onPaginationChange: (updater) => {
       setSearchParams(
         (prev) => {
@@ -548,10 +566,14 @@ export function MeetingDetailPage() {
             <>
               {canEditMeeting ? (
                 <Link to={`/meetings/${meeting.id}/edit`}>
-                  <Button variant="outline">Edit</Button>
+                  <Button variant="outline">
+                    <Pencil className="size-3" />
+                    Edit
+                  </Button>
                 </Link>
               ) : (
                 <Button variant="outline" disabled>
+                  <Pencil className="size-3" />
                   Edit
                 </Button>
               )}
@@ -562,7 +584,8 @@ export function MeetingDetailPage() {
                 disabled={!canMarkCompleted || markCompleted.isPending}
                 onClick={() => markCompleted.mutate()}
               >
-                Mark as completed
+                <CheckCircle2 className="size-4" />
+                <span>Mark as completed</span>
               </Button>
             </>
           )}
@@ -637,7 +660,7 @@ export function MeetingDetailPage() {
                   String(id ?? ""),
                 )}&returnTo=${encodeURIComponent(returnTo)}`}
               >
-                <Button type="button" variant="outline">
+                <Button>
                   <Plus className="size-4" />
                   Add task
                 </Button>
@@ -723,6 +746,8 @@ export function MeetingDetailPage() {
               <DataTable
                 table={table}
                 columnCount={columns.length}
+                sort={tableSorting}
+                onChangeSort={onChangeSort}
                 isLoading={meetingTasksQuery.isLoading}
                 emptyMessage="No tasks for this meeting yet."
               />

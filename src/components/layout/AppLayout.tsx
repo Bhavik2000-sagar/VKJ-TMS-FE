@@ -75,11 +75,13 @@ export function AppLayout() {
                 icon={<ClipboardList className="h-4 w-4" />}
                 label="EOD"
               />
-              <Nav
-                to="/meetings"
-                icon={<Calendar className="h-4 w-4" />}
-                label="Meetings"
-              />
+              {(p.includes("meeting.view") || p.includes("meeting.manage")) && (
+                <Nav
+                  to="/meetings"
+                  icon={<Calendar className="h-4 w-4" />}
+                  label="Meetings"
+                />
+              )}
               {p.includes("team.view") && (
                 <Nav
                   to="/team"

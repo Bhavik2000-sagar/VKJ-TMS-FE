@@ -2,6 +2,10 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "@/api/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
+  spotlightCardContentLayerClass,
+  topLeftSpotlightCardClass,
+} from "@/lib/cardFx";
+import {
   Bar,
   BarChart,
   ResponsiveContainer,
@@ -29,37 +33,48 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold uppercase tracking-wide text-primary">
-        Dashboard
-      </h1>
+      <div className="space-y-1">
+        <h1 className="text-2xl font-semibold uppercase tracking-wide text-primary">
+          Dashboard
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Overview of your tasks and activities.
+        </p>
+      </div>
       <div className="grid gap-4 md:grid-cols-3">
-        <Card>
+        <Card className={topLeftSpotlightCardClass}>
           <CardHeader>
-            <CardTitle className="text-sm text-muted-foreground">
+            <CardTitle className="font-heading text-base font-semibold uppercase tracking-wide text-primary">
               Total tasks (visible)
             </CardTitle>
           </CardHeader>
-          <CardContent className="text-3xl font-bold">
+          <CardContent
+            className={`text-3xl font-bold ${spotlightCardContentLayerClass}`}
+          >
             {data?.totalTasks ?? "—"}
           </CardContent>
         </Card>
-        <Card>
+        <Card className={topLeftSpotlightCardClass}>
           <CardHeader>
-            <CardTitle className="text-sm text-muted-foreground">
+            <CardTitle className="font-heading text-base font-semibold uppercase tracking-wide text-primary">
               Overdue
             </CardTitle>
           </CardHeader>
-          <CardContent className="text-3xl font-bold text-destructive">
+          <CardContent
+            className={`text-3xl font-bold text-destructive ${spotlightCardContentLayerClass}`}
+          >
             {data?.overdue ?? "—"}
           </CardContent>
         </Card>
-        <Card>
+        <Card className={topLeftSpotlightCardClass}>
           <CardHeader>
-            <CardTitle className="text-sm text-muted-foreground">
+            <CardTitle className="font-heading text-base font-semibold uppercase tracking-wide text-primary">
               Statuses
             </CardTitle>
           </CardHeader>
-          <CardContent className="text-sm text-muted-foreground">
+          <CardContent
+            className={`text-sm text-muted-foreground ${spotlightCardContentLayerClass}`}
+          >
             {data
               ? Object.entries(data.byStatus).map(([k, v]) => (
                   <div key={k}>
@@ -73,7 +88,9 @@ export function DashboardPage() {
       {chartData.length > 0 && (
         <Card className="h-72">
           <CardHeader>
-            <CardTitle>Tasks by status</CardTitle>
+            <CardTitle className="font-heading text-base font-semibold uppercase tracking-wide text-primary">
+              Tasks by status
+            </CardTitle>
           </CardHeader>
           <div className="h-52 px-2">
             <ResponsiveContainer width="100%" height="100%">

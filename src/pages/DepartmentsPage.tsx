@@ -3,7 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import type { ColumnDef, SortingState } from "@tanstack/react-table";
 import { getCoreRowModel, useReactTable } from "@tanstack/react-table";
-import { Eye } from "lucide-react";
+import { Eye, Plus } from "lucide-react";
 import { api } from "@/api/client";
 import { useMe } from "@/hooks/useAuth";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -19,7 +19,11 @@ import {
 } from "@/components/ui/select";
 import { DataTable } from "@/components/data-table";
 import { cn } from "@/lib/utils";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 type DepartmentRow = {
   id: string;
@@ -265,6 +269,7 @@ export function DepartmentsPage() {
           </p>
         </div>
         <Link to="/departments/new" className={cn(buttonVariants())}>
+          <Plus className="size-4" />
           Add department
         </Link>
       </div>

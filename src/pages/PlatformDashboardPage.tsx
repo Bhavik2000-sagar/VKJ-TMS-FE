@@ -34,8 +34,24 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { tenantStatusBadgeClass } from "@/lib/badges";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Mail, ToggleLeft, ToggleRight, Trash2 } from "lucide-react";
+import {
+  spotlightCardContentLayerClass,
+  topLeftSpotlightCardClass,
+} from "@/lib/cardFx";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  Eye,
+  Mail,
+  Pencil,
+  Plus,
+  ToggleLeft,
+  ToggleRight,
+  Trash2,
+} from "lucide-react";
 
 type TenantRow = {
   id: string;
@@ -93,6 +109,9 @@ export function PlatformDashboardPage() {
 
   const [searchInput, setSearchInput] = useState("");
   const search = useDebouncedValue(searchInput, 350);
+  const [statusFilter, setStatusFilter] = useState<
+    "" | "INVITED" | "ACTIVE" | "INACTIVE"
+  >("");
   const [sorting, setSorting] = useState<SortingState>([
     { id: "createdAt", desc: true },
   ]);
@@ -112,6 +131,7 @@ export function PlatformDashboardPage() {
       pagination.pageIndex,
       pagination.pageSize,
       search,
+      statusFilter,
       sortBy,
       sortDir,
     ],
@@ -123,6 +143,7 @@ export function PlatformDashboardPage() {
             page: pagination.pageIndex + 1,
             pageSize: pagination.pageSize,
             ...(search.trim() ? { search: search.trim() } : {}),
+            ...(statusFilter ? { status: statusFilter } : {}),
             sortBy,
             sortDir,
           },
@@ -240,6 +261,50 @@ export function PlatformDashboardPage() {
                 <Tooltip>
                   <TooltipTrigger
                     render={
+                      <Link to={`/platform/tenants/${t.id}`}>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="size-8"
+                          aria-label="View company details"
+                          disabled={
+                            setStatus.isPending || deleteTenant.isPending
+                          }
+                        >
+                          <Eye className="size-4" />
+                        </Button>
+                      </Link>
+                    }
+                  />
+                  <TooltipContent>View</TooltipContent>
+                </Tooltip>
+
+                <Tooltip>
+                  <TooltipTrigger
+                    render={
+                      <Link to={`/platform/tenants/${t.id}/edit`}>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="size-8"
+                          aria-label="Edit company"
+                          disabled={
+                            setStatus.isPending || deleteTenant.isPending
+                          }
+                        >
+                          <Pencil className="size-4" />
+                        </Button>
+                      </Link>
+                    }
+                  />
+                  <TooltipContent>Edit</TooltipContent>
+                </Tooltip>
+
+                <Tooltip>
+                  <TooltipTrigger
+                    render={
                       <Button
                         type="button"
                         variant="ghost"
@@ -296,33 +361,76 @@ export function PlatformDashboardPage() {
               <Tooltip>
                 <TooltipTrigger
                   render={
+                    <Link to={`/platform/tenants/${t.id}`}>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="size-8"
+                        aria-label="View company details"
+                        disabled={setStatus.isPending || deleteTenant.isPending}
+                      >
+                        <Eye className="size-4" />
+                      </Button>
+                    </Link>
+                  }
+                />
+                <TooltipContent>View</TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Link to={`/platform/tenants/${t.id}/edit`}>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="size-8"
+                        aria-label="Edit company"
+                        disabled={setStatus.isPending || deleteTenant.isPending}
+                      >
+                        <Pencil className="size-4" />
+                      </Button>
+                    </Link>
+                  }
+                />
+                <TooltipContent>Edit</TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger
+                  render={
                     <Button
                       type="button"
                       variant="ghost"
                       size="icon"
                       className="size-8"
                       aria-label={
-                        t.status === "INACTIVE" ? "Activate tenant" : "Deactivate tenant"
+                        t.status === "INACTIVE"
+                          ? "Activate tenant"
+                          : "Deactivate tenant"
                       }
                       disabled={setStatus.isPending || deleteTenant.isPending}
                       onClick={() =>
                         setConfirm({
                           tenantId: t.id,
                           tenantName: t.name,
-                          kind: nextStatus === "ACTIVE" ? "activate" : "deactivate",
+                          kind:
+                            nextStatus === "ACTIVE" ? "activate" : "deactivate",
                         })
                       }
                     />
                   }
                 >
                   {t.status === "INACTIVE" ? (
-                    <ToggleLeft className="size-4" />
+                    <ToggleLeft className="size-4 text-red-500" />
                   ) : (
-                    <ToggleRight className="size-4" />
+                    <ToggleRight className="size-4 text-green-500" />
                   )}
                 </TooltipTrigger>
                 <TooltipContent>
-                  {t.status === "INACTIVE" ? "Activate" : "Deactivate"}
+                  {t.status === "INACTIVE" ? "Activate it" : "Deactivate it"}
                 </TooltipContent>
               </Tooltip>
 
@@ -373,7 +481,7 @@ export function PlatformDashboardPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
+        <div className="space-y-1">
           <h1 className="font-heading text-2xl font-semibold uppercase tracking-wide text-primary">
             Dashboard
           </h1>
@@ -382,7 +490,10 @@ export function PlatformDashboardPage() {
           </p>
         </div>
         <Link to="/platform/tenants/new">
-          <Button>Add tenant</Button>
+          <Button>
+            <Plus className="size-4" />
+            Add Company
+          </Button>
         </Link>
       </div>
 
@@ -399,23 +510,27 @@ export function PlatformDashboardPage() {
         </Card>
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
-          <Card>
+          <Card className={topLeftSpotlightCardClass}>
             <CardHeader>
               <CardTitle className="text-sm text-muted-foreground">
                 Total tenants
               </CardTitle>
             </CardHeader>
-            <CardContent className="text-3xl font-bold">
+            <CardContent
+              className={`text-3xl font-bold ${spotlightCardContentLayerClass}`}
+            >
               {isLoading ? "—" : (data?.tenantsTotal ?? "—")}
             </CardContent>
           </Card>
-          <Card>
+          <Card className={topLeftSpotlightCardClass}>
             <CardHeader>
               <CardTitle className="text-sm text-muted-foreground">
                 Total tenant users
               </CardTitle>
             </CardHeader>
-            <CardContent className="text-3xl font-bold">
+            <CardContent
+              className={`text-3xl font-bold ${spotlightCardContentLayerClass}`}
+            >
               {isLoading ? "—" : (data?.usersTotal ?? "—")}
             </CardContent>
           </Card>
@@ -515,7 +630,7 @@ export function PlatformDashboardPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Tenants List</CardTitle>
+          <CardTitle className="text-lg">Companies List</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -531,7 +646,27 @@ export function PlatformDashboardPage() {
                 }}
               />
             </div>
-            <div className="w-full sm:w-40">
+            <div className="w-full flex flex-col gap-2 sm:max-w-sm">
+              <Label>Status</Label>
+              <Select
+                value={statusFilter}
+                onValueChange={(v) => {
+                  setStatusFilter(v as "" | "INVITED" | "ACTIVE" | "INACTIVE");
+                  setPagination((p) => ({ ...p, pageIndex: 0 }));
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="All statuses" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All statuses</SelectItem>
+                  <SelectItem value="INVITED">Invited</SelectItem>
+                  <SelectItem value="ACTIVE">Active</SelectItem>
+                  <SelectItem value="INACTIVE">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="w-full flex flex-col gap-2 sm:max-w-sm">
               <Label>Rows</Label>
               <Select
                 value={String(pagination.pageSize)}
