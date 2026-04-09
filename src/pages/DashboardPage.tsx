@@ -6,13 +6,14 @@ import {
   topLeftSpotlightCardClass,
 } from "@/lib/cardFx";
 import {
-  Bar,
-  BarChart,
+  Cell,
+  Legend,
+  Pie,
+  PieChart,
   ResponsiveContainer,
   Tooltip,
-  XAxis,
-  YAxis,
 } from "recharts";
+import { chartColor } from "@/lib/chartColors";
 
 export function DashboardPage() {
   const { data } = useQuery({
@@ -94,9 +95,7 @@ export function DashboardPage() {
           </CardHeader>
           <div className="h-52 px-2">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData}>
-                <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" />
-                <YAxis stroke="hsl(var(--muted-foreground))" />
+              <PieChart>
                 <Tooltip
                   contentStyle={{
                     background: "hsl(var(--popover))",
@@ -104,12 +103,24 @@ export function DashboardPage() {
                     color: "hsl(var(--popover-foreground))",
                   }}
                 />
-                <Bar
+                <Legend />
+                <Pie
+                  data={chartData}
                   dataKey="value"
-                  fill="hsl(var(--primary))"
-                  radius={[6, 6, 0, 0]}
-                />
-              </BarChart>
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={50}
+                  outerRadius={80}
+                  paddingAngle={2}
+                  stroke="hsl(var(--background))"
+                  strokeWidth={2}
+                >
+                  {chartData.map((_, i) => (
+                    <Cell key={i} fill={chartColor(i)} />
+                  ))}
+                </Pie>
+              </PieChart>
             </ResponsiveContainer>
           </div>
         </Card>

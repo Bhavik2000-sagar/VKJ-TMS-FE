@@ -60,7 +60,7 @@ export function UserMenu({ me }: { me: Me }) {
       <DropdownMenu>
         <DropdownMenuTrigger className="rounded-full outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring">
           <motion.span
-            className="inline-flex"
+            className="inline-flex cursor-pointer"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.96 }}
             transition={{ type: "spring", stiffness: 420, damping: 28 }}

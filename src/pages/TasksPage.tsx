@@ -48,6 +48,7 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { overdueBadgeClass } from "@/lib/badges";
+import { useMe } from "@/hooks/useAuth";
 
 type TaskRow = {
   id: string;
@@ -201,6 +202,7 @@ function parseTasksUrlParams(searchParams: URLSearchParams) {
 export function TasksPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const me = useMe();
   const [searchParams, setSearchParams] = useSearchParams();
   const skipSearchInputSync = useRef(false);
   const [deleteTarget, setDeleteTarget] = useState<{
@@ -312,6 +314,9 @@ export function TasksPage() {
           page: pagination.pageIndex + 1,
           pageSize: pagination.pageSize,
           ...(queue !== "all" ? { queue } : {}),
+          ...(queue === "review" && me.data?.user?.id
+            ? { reviewerId: me.data.user.id }
+            : {}),
           ...(statusId ? { statusId } : {}),
           ...(priority ? { priority } : {}),
           ...(dueFrom

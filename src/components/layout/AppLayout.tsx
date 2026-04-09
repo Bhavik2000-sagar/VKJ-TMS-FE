@@ -5,6 +5,7 @@ import { NotificationBell } from "@/components/NotificationBell";
 import { UserMenu } from "@/components/UserMenu";
 import { useTheme } from "@/providers/theme-provider";
 import { useEffect } from "react";
+import { roleCodeBadgeClass } from "@/lib/badges";
 import {
   LayoutDashboard,
   CheckSquare,
@@ -135,12 +136,18 @@ export function AppLayout() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
         >
-          <div className="min-w-0 text-sm text-muted-foreground">
-            <span className="truncate font-medium text-foreground">
-              {data.user.name}
-            </span>
-            <span className="text-muted-foreground"> · </span>
-            <span className="truncate">{data.user.roleCode ?? "—"}</span>
+          <div className="w-full flex flex-row gap-2 items-center">
+            <div className="text-sm mt-0.5 font-medium uppercase tracking-wide text-primary/80">
+              Welcome back,
+            </div>
+            <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-2">
+              <span className="truncate text-sm font-semibold text-foreground">
+                {data.user.name}
+              </span>
+              <span className={roleCodeBadgeClass(data.user.roleCode)}>
+                {data.user.roleCode ? String(data.user.roleCode) : "—"}
+              </span>
+            </div>
           </div>
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
             <NotificationBell />

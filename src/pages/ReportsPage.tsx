@@ -10,13 +10,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  Bar,
-  BarChart,
+  Cell,
+  Legend,
+  Pie,
+  PieChart,
   ResponsiveContainer,
   Tooltip,
-  XAxis,
-  YAxis,
 } from "recharts";
+import { chartColor } from "@/lib/chartColors";
 
 export function ReportsPage() {
   const { data: dash } = useQuery({
@@ -44,6 +45,7 @@ export function ReportsPage() {
   const chartData = dash
     ? Object.entries(dash.byStatus).map(([name, value]) => ({ name, value }))
     : [];
+  const chartTotal = chartData.reduce((sum, d) => sum + (d.value || 0), 0);
 
   return (
     <div className="space-y-6">
@@ -57,22 +59,46 @@ export function ReportsPage() {
           </CardHeader>
           <div className="h-52 px-2">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData}>
-                <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" />
-                <YAxis stroke="hsl(var(--muted-foreground))" />
+              <PieChart>
                 <Tooltip
+                  formatter={(value: unknown, name: unknown) => {
+                    const n = typeof value === "number" ? value : Number(value);
+                    const pct =
+                      chartTotal > 0 && Number.isFinite(n)
+                        ? Math.round((n / chartTotal) * 100)
+                        : 0;
+                    return [`${n} (${pct}%)`, String(name)];
+                  }}
                   contentStyle={{
                     background: "hsl(var(--popover))",
                     border: "1px solid hsl(var(--border))",
                     color: "hsl(var(--popover-foreground))",
                   }}
                 />
-                <Bar
+                <Legend />
+                <Pie
+                  data={chartData}
                   dataKey="value"
-                  fill="hsl(var(--primary))"
-                  radius={[6, 6, 0, 0]}
-                />
-              </BarChart>
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={50}
+                  outerRadius={80}
+                  paddingAngle={2}
+                  stroke="hsl(var(--background))"
+                  strokeWidth={2}
+                  labelLine={false}
+                  label={({ name, value }) => {
+                    if (!chartTotal) return String(name);
+                    const pct = Math.round(((value || 0) / chartTotal) * 100);
+                    return `${name} ${pct}%`;
+                  }}
+                >
+                  {chartData.map((_, i) => (
+                    <Cell key={i} fill={chartColor(i)} />
+                  ))}
+                </Pie>
+              </PieChart>
             </ResponsiveContainer>
           </div>
         </Card>
